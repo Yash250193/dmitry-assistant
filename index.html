@@ -1455,11 +1455,11 @@ function formatDate(d){if(!d)return'';const dt=new Date(d);return dt.toLocaleDat
 function toggleTaskDone(fid,tid){
   const f=focuses.find(x=>x.id===fid);if(!f)return;
   const t=f.tasks.find(x=>x.id===tid);if(!t)return;
-  t.done=!t.done;renderFocusTasks(fid);renderSbFocuses();
+  t.done=!t.done;saveFocusData();renderFocusTasks(fid);renderSbFocuses();
 }
 function delFocusTask(fid,tid){
   const f=focuses.find(x=>x.id===fid);if(!f)return;
-  f.tasks=f.tasks.filter(x=>x.id!==tid);renderFocusTasks(fid);renderSbFocuses();
+  f.tasks=f.tasks.filter(x=>x.id!==tid);saveFocusData();renderFocusTasks(fid);renderSbFocuses();
 }
 
 // FOCUS MODAL
@@ -1474,14 +1474,14 @@ function openFocusModal(id){
   document.getElementById('focusOverlay').classList.add('show');
 }
 function closeFocusModal(){document.getElementById('focusOverlay').classList.remove('show');}
-function delFocus(){focuses=focuses.filter(x=>x.id!==focusEditId);closeFocusModal();renderFocusScreen();renderSidebar();}
+function delFocus(){focuses=focuses.filter(x=>x.id!==focusEditId);saveFocusData();closeFocusModal();renderFocusScreen();renderSidebar();}
 function saveFocus(){
   const name=document.getElementById('fmName').value.trim();if(!name)return;
   const desc=document.getElementById('fmDesc').value.trim();
   const color=document.getElementById('fmColor').value;
   if(focusEditId){const f=focuses.find(x=>x.id===focusEditId);if(f){f.name=name;f.desc=desc;f.color=color;}}
   else focuses.push({id:nid++,name,desc,color,tasks:[]});
-  closeFocusModal();renderFocusScreen();renderSidebar();
+  saveFocusData();closeFocusModal();renderFocusScreen();renderSidebar();
 }
 document.getElementById('focusOverlay').onclick=e=>{if(e.target===e.currentTarget)closeFocusModal();};
 
@@ -1501,7 +1501,7 @@ function closeTaskModal(){document.getElementById('taskOverlay').classList.remov
 function delTask(){
   const f=focuses.find(x=>x.id===taskFocusId);if(!f)return;
   f.tasks=f.tasks.filter(x=>x.id!==taskEditId);
-  closeTaskModal();renderFocusTasks(taskFocusId);renderSbFocuses();
+  saveFocusData();closeTaskModal();renderFocusTasks(taskFocusId);renderSbFocuses();
 }
 function saveTask(){
   const text=document.getElementById('tmTxt').value.trim();if(!text)return;
@@ -1510,7 +1510,7 @@ function saveTask(){
   const f=focuses.find(x=>x.id===taskFocusId);if(!f)return;
   if(taskEditId){const t=f.tasks.find(x=>x.id===taskEditId);if(t){t.text=text;t.deadline=deadline;t.priority=priority;}}
   else f.tasks.push({id:nid++,text,deadline,priority,done:false});
-  closeTaskModal();renderFocusTasks(taskFocusId);renderSbFocuses();
+  saveFocusData();closeTaskModal();renderFocusTasks(taskFocusId);renderSbFocuses();
 }
 document.getElementById('taskOverlay').onclick=e=>{if(e.target===e.currentTarget)closeTaskModal();};
 
@@ -1998,6 +1998,21 @@ function getMonthPct(id){
 function saveHabitData(){try{localStorage.setItem('hLogs',JSON.stringify(habitLogs));localStorage.setItem('hDefs',JSON.stringify(habits));}catch(e){}}
 function loadHabitData(){try{const l=localStorage.getItem('hLogs');if(l)habitLogs=JSON.parse(l);const h=localStorage.getItem('hDefs');if(h)habits=JSON.parse(h);}catch(e){}}
 
+function saveFocusData(){
+  try{localStorage.setItem('focusData',JSON.stringify(focuses));}catch(e){}
+  showToast('Сохранено');
+}
+function loadFocusData(){try{const f=localStorage.getItem('focusData');if(f)focuses=JSON.parse(f);}catch(e){}}
+function showToast(msg){
+  let t=document.getElementById('globalToast');
+  if(!t){t=document.createElement('div');t.id='globalToast';
+    t.style.cssText='position:fixed;bottom:70px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--s3);color:var(--t1);border:1px solid var(--b2);border-radius:8px;padding:8px 18px;font-size:12px;z-index:9999;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none';
+    document.body.appendChild(t);}
+  t.textContent=msg;t.style.opacity='1';t.style.transform='translateX(-50%) translateY(0)';
+  clearTimeout(t._t);t._t=setTimeout(()=>{t.style.opacity='0';t.style.transform='translateX(-50%) translateY(10px)';}
+  ,1400);
+}
+
 function renderHabits(){
   const today=todayStr();
   const totalDone=habits.filter(h=>isHabitDone(h.id,today)).length;
@@ -2150,6 +2165,7 @@ document.getElementById('hDate').textContent=new Date().toLocaleDateString('ru',
 loadTheme();
 loadNotes();
 loadHabitData();
+loadFocusData();
 loadWeekMonthNotes();
 pomoRender();
 renderWeek();
