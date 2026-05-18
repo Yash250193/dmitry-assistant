@@ -129,8 +129,10 @@ body{background:var(--bg);color:var(--t1);font-family:'Azeret Mono',monospace;fo
 .week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
 .day-col{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r2);overflow:hidden;min-height:260px}
 .day-col-head{padding:10px 12px;background:var(--s2);border-bottom:1px solid var(--b1)}
+.day-col-head.dcol-today{background:color-mix(in srgb,var(--blue) 12%,var(--s2))}
 .dcol-name{font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.08em}
 .dcol-date{font-family:'Unbounded',sans-serif;font-size:18px;font-weight:700;color:var(--t1);margin-top:2px}
+.dcol-today .dcol-date{color:var(--blue)}
 .day-col-body{padding:6px;display:flex;flex-direction:column;gap:3px}
 .cal-ev{border-radius:5px;padding:4px 7px;font-size:10px;line-height:1.35;cursor:pointer;transition:opacity .15s;display:flex;align-items:flex-start;gap:4px}
 .cal-ev:hover{opacity:.8}
@@ -616,6 +618,7 @@ body.light .mday.other{opacity:.35}
     <div class="tnav" onclick="goTo('clients')">💼 Клиенты</div>
     <div class="tnav" onclick="goTo('habits')">🏆 Привычки</div>
     <div class="tnav" onclick="goTo('notes')">📓 Блокнот</div>
+    <div class="tnav" onclick="goTo('avito')">🔷 Авито</div>
   </div>
   <div class="topbar-right" style="display:flex;align-items:center;gap:8px">
     <button class="chat-toggle-btn" id="chatToggleBtn" onclick="toggleChat()">💬 ИИ</button>
@@ -726,7 +729,11 @@ body.light .mday.other{opacity:.35}
 <div class="screen active" id="screen-week">
   <div class="week-scroll">
     <div class="week-toolbar">
-      <div class="screen-heading">Неделя 11–17 мая · тестовая</div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <button class="mnav" onclick="chWeek(-1)">←</button>
+        <div class="screen-heading" id="weekHeading">Неделя</div>
+        <button class="mnav" onclick="chWeek(1)">→</button>
+      </div>
       <button class="add-btn" onclick="openCalAdd(null,null)">+ Добавить задачу</button>
     </div>
     <div class="week-grid" id="weekGrid"></div>
@@ -827,6 +834,9 @@ body.light .mday.other{opacity:.35}
   <div id="habCards"></div>
 </div>
 
+<!-- AVITO DASHBOARD -->
+<div class="screen" id="screen-avito"></div>
+
 </div><!-- /main -->
 </div><!-- /layout -->
 
@@ -890,8 +900,8 @@ body.light .mday.other{opacity:.35}
       <div class="mf"><div class="ml">Время</div><input class="mi" id="cmTime" type="time" value="10:00"></div>
       <div class="mf"><div class="ml">День</div>
         <select class="mi" id="cmDay">
-          <option value="0">Пн 11</option><option value="1">Вт 12</option><option value="2">Ср 13</option>
-          <option value="3">Чт 14</option><option value="4">Пт 15</option><option value="5">Сб 16</option><option value="6">Вс 17</option>
+          <option value="0">Пн</option><option value="1">Вт</option><option value="2">Ср</option>
+          <option value="3">Чт</option><option value="4">Пт</option><option value="5">Сб</option><option value="6">Вс</option>
         </select>
       </div>
     </div>
@@ -1091,8 +1101,17 @@ let mevs={};
 let curMonth=new Date(2026,4,1);
 let selDay=null;
 const DAYS=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
-const DATES=['11','12','13','14','15','16','17'];
 const MONTHS=['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+// ── Week helpers ──────────────────────────────────────────────────────────────
+function getMonday(d){const dt=new Date(d);dt.setHours(0,0,0,0);const dow=(dt.getDay()+6)%7;dt.setDate(dt.getDate()-dow);return dt;}
+function weekKey(mon){return mon.getFullYear()+'-'+String(mon.getMonth()+1).padStart(2,'0')+'-'+String(mon.getDate()).padStart(2,'0');}
+function weekDayKey(mon,di){const d=new Date(mon);d.setDate(d.getDate()+di);return weekKey(d);}
+function weekLabel(mon){const d2=new Date(mon);d2.setDate(d2.getDate()+6);const mo1=MONTHS[mon.getMonth()],mo2=MONTHS[d2.getMonth()];if(mo1===mo2)return mon.getDate()+'–'+d2.getDate()+' '+mo1;return mon.getDate()+' '+mo1.slice(0,3)+'–'+d2.getDate()+' '+mo2.slice(0,3);}
+function updateCmDayOptions(){const sel=document.getElementById('cmDay');if(!sel)return;const cur=parseInt(sel.value)||0;sel.innerHTML=DAYS.map((nm,di)=>{const dd=new Date(curWeek);dd.setDate(dd.getDate()+di);return`<option value="${di}">${nm} ${dd.getDate()}</option>`;}).join('');sel.value=cur;}
+function chWeek(dir){curWeek=getMonday(new Date(curWeek));curWeek.setDate(curWeek.getDate()+dir*7);renderWeek();}
+function loadWeekNote(){const ta=document.getElementById('weekNotesTA');if(!ta)return;ta.value=localStorage.getItem('weekNote_'+weekKey(curWeek))||'';}
+function toggleMEvDone(key,id){const e=(mevs[key]||[]).find(x=>x.id===id);if(!e)return;e.done=!e.done;renderWeek();if(document.getElementById('screen-month').classList.contains('active'))renderMonth();}
+let curWeek=getMonday(new Date());
 
 // Modal state
 let calEditId=null,calEditDateKey=null;
@@ -1108,7 +1127,7 @@ function goTo(s,focusId){
   document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('.tnav').forEach(x=>x.classList.remove('active'));
   document.getElementById('screen-'+s).classList.add('active');
-  const tabs=['week','month','focus','goals','clients','habits','notes'];
+  const tabs=['week','month','focus','goals','clients','habits','notes','avito'];
   const ti=tabs.indexOf(s);
   if(ti>=0){
     document.querySelectorAll('.tnav')[ti].classList.add('active');
@@ -1124,6 +1143,7 @@ function goTo(s,focusId){
   if(s==='clients')renderClients();
   if(s==='habits')renderHabits();
   if(s==='notes')renderNotes();
+  if(s==='avito'&&typeof avitoDashboard!=='undefined')avitoDashboard.onActivate();
 }
 
 function toggleSidebar(){
@@ -1196,19 +1216,27 @@ function renderSbPersonal(){
 // WEEK CALENDAR
 // ═══════════════════════════════════════════════════════════════════
 function renderWeek(){
+  const h=document.getElementById('weekHeading');
+  if(h)h.textContent='Неделя '+weekLabel(curWeek);
   const g=document.getElementById('weekGrid');g.innerHTML='';
+  const todayMs=new Date(new Date().setHours(0,0,0,0)).getTime();
   DAYS.forEach((_,di)=>{
-    const de=calEvs.filter(e=>e.day===di).sort((a,b)=>a.t.localeCompare(b.t));
+    const dayDate=new Date(curWeek);dayDate.setDate(dayDate.getDate()+di);
+    const y=dayDate.getFullYear(),m=dayDate.getMonth(),d=dayDate.getDate();
+    const dk=weekDayKey(curWeek,di);
+    const de=getDayEvs(y,m,d);
+    const isToday=dayDate.getTime()===todayMs;
     const col=document.createElement('div');col.className='day-col';
-    col.innerHTML=`<div class="day-col-head"><div class="dcol-name">${DAYS[di]}</div><div class="dcol-date">${DATES[di]}</div></div>
-      <div class="day-col-body">${de.map(e=>`<div class="cal-ev ${e.cl}${e.done?' ev-done':''}">
+    col.innerHTML=`<div class="day-col-head${isToday?' dcol-today':''}"><div class="dcol-name">${DAYS[di]}</div><div class="dcol-date">${d}</div></div>
+      <div class="day-col-body">${de.map(e=>{const isCE=e.day!==undefined;const ef=isCE?`openCalEdit(${e.id})`:`openCalEditM('${dk}',${e.id})`;const tf=isCE?`toggleCalEvDone(${e.id})`:`toggleMEvDone('${dk}',${e.id})`;return`<div class="cal-ev ${e.cl}${e.done?' ev-done':''}">
         <span class="ev-time-small">${e.t}</span>
-        <span class="ev-tx" onclick="openCalEdit(${e.id})">${e.tx}</span>
-        <span class="ev-chk" onclick="event.stopPropagation();toggleCalEvDone(${e.id})" title="${e.done?'Снять отметку':'Отметить выполненным'}">${e.done?'✓':'·'}</span>
-      </div>`).join('')}
-      <div class="add-ev-row" onclick="openCalAdd(${di},null)">＋ добавить</div></div>`;
+        <span class="ev-tx" onclick="${ef}">${e.tx}</span>
+        <span class="ev-chk" onclick="event.stopPropagation();${tf}" title="${e.done?'Снять отметку':'Отметить выполненным'}">${e.done?'✓':'·'}</span>
+      </div>`;}).join('')}
+      <div class="add-ev-row" onclick="openCalAdd(null,'${dk}')">＋ добавить</div></div>`;
     g.appendChild(col);
   });
+  loadWeekNote();
   renderWeekStats();
 }
 
@@ -1276,7 +1304,10 @@ function openCalAdd(day,dateKey){
   calEditId=null;calEditDateKey=dateKey;
   document.getElementById('calModalTitle').textContent='Добавить задачу';
   document.getElementById('cmTxt').value='';document.getElementById('cmTime').value='10:00';
-  document.getElementById('cmDay').value=day!==null?day:0;document.getElementById('cmType').value='ev-custom';
+  updateCmDayOptions();
+  if(dateKey){const dd=new Date(dateKey+'T00:00:00');const di=Math.round((dd-curWeek)/86400000);document.getElementById('cmDay').value=di>=0&&di<7?di:0;}
+  else document.getElementById('cmDay').value=day!==null?day:0;
+  document.getElementById('cmType').value='ev-custom';
   document.getElementById('cmDel').style.display='none';
   document.getElementById('calOverlay').classList.add('show');
 }
@@ -1285,6 +1316,7 @@ function openCalEdit(id){
   calEditId=id;calEditDateKey=null;
   document.getElementById('calModalTitle').textContent='Редактировать задачу';
   document.getElementById('cmTxt').value=e.tx;document.getElementById('cmTime').value=e.t;
+  updateCmDayOptions();
   document.getElementById('cmDay').value=e.day;document.getElementById('cmType').value=e.cl;
   document.getElementById('cmDel').style.display='block';
   document.getElementById('calOverlay').classList.add('show');
@@ -1294,9 +1326,10 @@ function openCalEditM(dk,id){
   calEditId=null;calEditDateKey=dk;
   document.getElementById('calModalTitle').textContent='Редактировать задачу';
   document.getElementById('cmTxt').value=e.tx;document.getElementById('cmTime').value=e.t;
+  updateCmDayOptions();
   document.getElementById('cmDay').value=0;document.getElementById('cmType').value=e.cl||'ev-custom';
   document.getElementById('cmDel').style.display='block';
-  document.getElementById('cmDel').onclick=()=>{if(mevs[dk])mevs[dk]=mevs[dk].filter(x=>x.id!==id);closeCalModal();renderMonth();};
+  document.getElementById('cmDel').onclick=()=>{if(mevs[dk])mevs[dk]=mevs[dk].filter(x=>x.id!==id);closeCalModal();renderWeek();renderMonth();};
   document.getElementById('calOverlay').classList.add('show');
 }
 function closeCalModal(){document.getElementById('calOverlay').classList.remove('show');}
@@ -1307,8 +1340,7 @@ function saveCalEv(){
   const day=parseInt(document.getElementById('cmDay').value);
   const cl=document.getElementById('cmType').value;
   if(calEditId){const e=calEvs.find(x=>x.id===calEditId);if(e){e.tx=tx;e.t=t;e.day=day;e.cl=cl;}}
-  else if(calEditDateKey){if(!mevs[calEditDateKey])mevs[calEditDateKey]=[];mevs[calEditDateKey].push({id:nid++,t,tx,cl});}
-  else calEvs.push({id:nid++,day,t,tx,cl});
+  else{const dk=calEditDateKey||weekDayKey(curWeek,day);if(!mevs[dk])mevs[dk]=[];mevs[dk].push({id:nid++,t,tx,cl});}
   closeCalModal();renderWeek();renderMonth();
 }
 document.getElementById('calOverlay').onclick=e=>{if(e.target===e.currentTarget)closeCalModal();};
@@ -1332,9 +1364,11 @@ function renderWeekStats(){
   const chart=document.getElementById('weekStatsChart');
   const chips=document.getElementById('weekStatsChips');
   if(!chart)return;
+  const todayMs=new Date(new Date().setHours(0,0,0,0)).getTime();
   const data=DAYS.map((name,di)=>{
-    const evs=calEvs.filter(e=>e.day===di);
-    return{name,date:DATES[di],total:evs.length,done:evs.filter(e=>e.done).length};
+    const dd=new Date(curWeek);dd.setDate(dd.getDate()+di);
+    const evs=getDayEvs(dd.getFullYear(),dd.getMonth(),dd.getDate());
+    return{name,date:dd.getDate(),total:evs.length,done:evs.filter(e=>e.done).length,isToday:dd.getTime()===todayMs};
   });
   const maxTotal=Math.max(...data.map(d=>d.total),1);
   const totalAll=data.reduce((s,d)=>s+d.total,0);
@@ -1343,13 +1377,12 @@ function renderWeekStats(){
   const col=pctAll>=80?'var(--green)':pctAll>=40?'var(--amber)':'var(--coral)';
   chips.innerHTML=`<div class="stats-chip"><b style="color:${col}">${doneAll}/${totalAll}</b> выполнено</div><div class="stats-chip"><b style="color:${col}">${pctAll}%</b> недели</div>`;
   const BAR_H=56;
-  chart.innerHTML=data.map((d,i)=>{
+  chart.innerHTML=data.map(d=>{
     const bgH=Math.round(d.total/maxTotal*BAR_H);
     const fgH=d.total?Math.round(d.done/maxTotal*BAR_H):0;
     const pct=d.total?d.done/d.total:0;
     const fc=pct===1?'var(--green)':pct>=.5?'var(--blue)':pct>0?'var(--amber)':'transparent';
-    const today=new Date();const todayDow=(today.getDay()+6)%7;
-    return`<div class="bcol${i===todayDow?' today-col':''}">
+    return`<div class="bcol${d.isToday?' today-col':''}">
       <div class="bcol-val">${d.total?d.done+'/'+d.total:''}</div>
       <div class="bcol-bar" style="height:${BAR_H}px;width:100%">
         <div class="bcol-bg" style="height:${bgH}px"></div>
@@ -1934,7 +1967,7 @@ function setNoteColor(cn){
 // WEEK / MONTH NOTES
 // ═══════════════════════════════════════════════════════════════════
 function saveWeekNote(v){
-  try{localStorage.setItem('weekNote',v);}catch(e){}
+  try{localStorage.setItem('weekNote_'+weekKey(curWeek),v);}catch(e){}
   const el=document.getElementById('weekNotesSaved');if(!el)return;
   el.classList.add('show');clearTimeout(el._t);
   el._t=setTimeout(()=>el.classList.remove('show'),1500);
@@ -1946,9 +1979,8 @@ function saveMonthNote(v){
   el._t=setTimeout(()=>el.classList.remove('show'),1500);
 }
 function loadWeekMonthNotes(){
-  const wn=localStorage.getItem('weekNote');
+  loadWeekNote();
   const mn=localStorage.getItem('monthNote');
-  if(wn){const ta=document.getElementById('weekNotesTA');if(ta)ta.value=wn;}
   if(mn){const ta=document.getElementById('monthNotesTA');if(ta)ta.value=mn;}
 }
 
@@ -2181,7 +2213,10 @@ renderSidebar();
   <div class="bnav" onclick="goTo('clients')">💼<span>Клиенты</span></div>
   <div class="bnav" onclick="goTo('habits')">🏆<span>Привычки</span></div>
   <div class="bnav" onclick="goTo('notes')">📓<span>Блокнот</span></div>
+  <div class="bnav" onclick="goTo('avito')">🔷<span>Авито</span></div>
 </nav>
 
+<script src="avito-api.js"></script>
+<script src="avito-dashboard.js"></script>
 </body>
 </html>
