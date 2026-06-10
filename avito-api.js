@@ -10,16 +10,15 @@
  * Прокси слушает http://localhost:8080 и пробрасывает запросы на api.avito.ru.
  */
 
-// Автоматически переключаемся на прокси при работе через localhost
+// На localhost используем /api/* того же сервера (server.js) — CORS невозможен.
+// На продакшне запросы идут напрямую на api.avito.ru.
 const _AVITO_BASE = (() => {
   try {
     const h = window.location.hostname;
     if (h === 'localhost' || h === '127.0.0.1') {
-      console.log('[AvitoAPI] режим: прокси → http://127.0.0.1:9099');
-      return 'http://127.0.0.1:9099';
+      return window.location.origin + '/api'; // → http://localhost:3000/api
     }
   } catch (_) {}
-  console.log('[AvitoAPI] режим: прямой запрос → https://api.avito.ru');
   return 'https://api.avito.ru';
 })();
 
