@@ -240,14 +240,16 @@
     msg('Создаём аккаунт…','');
     const { data, error } = await supa.auth.signUp({ email, password:pass });
     if(error){ msg(error.message,'err'); return; }
-    if(data.session){
-      // Подтверждение email отключено — сразу входим; pullMerge выгрузит локальные данные
-      msg('Аккаунт создан!','ok');
-      await applySession(data.session);
-      setTimeout(cloudCloseModal,600);
-    }else{
-      msg('Аккаунт создан. Подтвердите email из письма, затем войдите.','ok');
+    let sess = data.session;
+    if(!sess){
+      // Пользователь автоподтверждается триггером в БД — входим сразу
+      const r = await supa.auth.signInWithPassword({ email, password:pass });
+      if(r.error){ msg('Аккаунт создан. Войдите с теми же данными.','ok'); return; }
+      sess = r.data.session;
     }
+    msg('Аккаунт создан!','ok');
+    await applySession(sess);
+    setTimeout(cloudCloseModal,600);
   };
 
   window.cloudLogout=async function(){

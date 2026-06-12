@@ -733,6 +733,10 @@ select.mi{-webkit-appearance:none;cursor:pointer}
   /* ── NOTEBOOK ── */
   .nb-grid{grid-template-columns:1fr 1fr}
   .nb-list{padding:12px 14px}
+  .nb-toolbar{padding:12px 14px;gap:6px}
+  .nb-search{min-width:0;flex:1}
+  .nb-toolbar .add-btn{padding:9px 12px;font-size:13px;white-space:nowrap;flex-shrink:0}
+  .nb-vbtn{flex-shrink:0}
 
   /* ── CHAT PANEL ── */
   .chat-panel{
@@ -771,6 +775,11 @@ select.mi{-webkit-appearance:none;cursor:pointer}
   .modal-btns{flex-direction:column-reverse;gap:8px}
   .modal-btns .mbtn{width:100%;justify-content:center}
   .mbtn.danger{margin-right:0;width:100%}
+
+  /* ── КАРТОЧКА КЛИЕНТА — блок добавления задачи вертикально ── */
+  .cd-add-task{flex-direction:column;gap:8px}
+  .cd-task-inp,.cd-pr-sel,.cd-task-date,.cd-add-btn{width:100%!important;min-width:0!important;box-sizing:border-box}
+  .cd-add-btn{min-height:44px}
 
   /* ── TOUCH TARGETS — мин 44px ── */
   .add-btn,.mbtn,.cd-add-btn{min-height:44px;display:inline-flex;align-items:center;justify-content:center}
@@ -2343,12 +2352,14 @@ document.getElementById('goalOverlay').onclick=e=>{if(e.target===e.currentTarget
 function renderClients(){
   const g=document.getElementById('clientsGrid');g.innerHTML='';
   clients.forEach(cl=>{
-    const taskCount=cl.tasks.length;
-    const done=cl.tasks.filter(t=>t.done).length;
+    const tasks=cl.tasks||(cl.tasks=[]);
+    const rows=cl.rows||[];
+    const taskCount=tasks.length;
+    const done=tasks.filter(t=>t.done).length;
     const div=document.createElement('div');div.className='client-card';
     div.onclick=()=>openClientDetail(cl.id);
-    div.innerHTML=`<div class="cc-header"><div class="cc-name">${cl.name}</div><div class="cc-badge badge-${cl.badge}">${cl.status}</div></div>
-      ${cl.rows.map(r=>`<div class="cc-row"><span class="ck">${r[0]}</span><span class="cv ${r[2]||''}">${r[1]}</span></div>`).join('')}
+    div.innerHTML=`<div class="cc-header"><div class="cc-name">${cl.name}</div><div class="cc-badge badge-${cl.badge||'g'}">${cl.status||''}</div></div>
+      ${rows.map(r=>`<div class="cc-row"><span class="ck">${r[0]}</span><span class="cv ${r[2]||''}">${r[1]}</span></div>`).join('')}
       ${cl.urgent?`<div class="urgent">${cl.urgent}</div>`:''}
       ${taskCount>0?`<div class="cc-tasks-count">📋 ${done}/${taskCount} задач выполнено</div>`:`<div class="cc-tasks-count" style="color:var(--t3)">Нажми чтобы добавить задачи</div>`}`;
     g.appendChild(div);
@@ -2369,7 +2380,7 @@ function renderClientDetail(cid){
   const body=document.getElementById('cdBody');
   body.innerHTML=`
     <div class="cd-section-title">Информация</div>
-    ${cl.rows.map(r=>`<div class="cd-info-row"><span style="color:var(--t3)">${r[0]}</span><span style="color:${r[2]==='g'?'var(--green)':r[2]==='a'?'var(--amber)':r[2]==='r'?'var(--coral)':'var(--t1)'}">${r[1]}</span></div>`).join('')}
+    ${(cl.rows||[]).map(r=>`<div class="cd-info-row"><span style="color:var(--t3)">${r[0]}</span><span style="color:${r[2]==='g'?'var(--green)':r[2]==='a'?'var(--amber)':r[2]==='r'?'var(--coral)':'var(--t1)'}">${r[1]}</span></div>`).join('')}
     ${cl.urgent?`<div class="urgent" style="display:block;margin-top:8px">${cl.urgent}</div>`:''}
     <div class="cd-section-title" style="margin-top:16px">Заметки</div>
     <textarea class="cd-notes-ta" id="cdNotes-${cid}" placeholder="Договорённости, детали, идеи по клиенту..." oninput="saveClientNote(${cid},this.value)">${cl.notes||''}</textarea>
@@ -2389,6 +2400,7 @@ function renderClientDetail(cid){
 
 function renderClientTasks(cid){
   const cl=clients.find(x=>x.id===cid);if(!cl)return'';
+  if(!cl.tasks)cl.tasks=[];
   if(!cl.tasks.length)return'<div style="font-size:11px;color:var(--t3);text-align:center;padding:12px 0">Задач нет</div>';
   const sorted=[...cl.tasks].sort((a,b)=>{const p={high:0,mid:1,low:2};return p[a.priority]-p[b.priority];});
   const todayStr=new Date().toISOString().split('T')[0];
@@ -2602,7 +2614,7 @@ function renderNotes(){
         ${n.pinned?'<div class="note-card-pin">📌</div>':''}
         ${n.title?`<div class="note-card-title">${n.title}</div>`:''}
         <div class="note-card-preview">${n.body||'<i style="opacity:.4">Пустая заметка</i>'}</div>
-        <div class="note-card-footer"><span class="note-card-date">${nbFmt(n.updated)}</span>${n.pinned?'':'<span style="font-size:9px;color:var(--t3)">${n.body.length} симв</span>'}</div>`;
+        <div class="note-card-footer"><span class="note-card-date">${nbFmt(n.updated)}</span>${n.pinned?'':`<span style="font-size:9px;color:var(--t3)">${(n.body||'').length} симв</span>`}</div>`;
     } else {
       el.innerHTML=`
         <div style="display:flex;gap:10px;align-items:flex-start;width:100%">
