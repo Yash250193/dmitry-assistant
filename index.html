@@ -278,6 +278,35 @@ body{background:var(--bg);color:var(--t1);font-family:'Onest',sans-serif;font-si
 .urgent{display:inline-block;background:#2d0011;color:#fda4af;font-size:10px;padding:3px 10px;border-radius:10px;margin-top:10px}
 .cc-tasks-count{font-size:10px;color:var(--t3);margin-top:8px}
 
+/* ВСЕ ЗАДАЧИ КЛИЕНТОВ (общий список) */
+.all-tasks-section{margin-top:24px;background:var(--s1);border:1px solid var(--b1);border-radius:14px;padding:16px 18px}
+.ats-header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.ats-title{font-family:'Unbounded',sans-serif;font-size:15px;font-weight:700;color:var(--t1)}
+.ats-count{font-size:11px;color:var(--t3);background:var(--s2);padding:3px 9px;border-radius:10px;white-space:nowrap}
+.ats-filters{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.ats-fbtn{background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:6px 13px;font-size:11px;font-family:'Onest',sans-serif;color:var(--t2);cursor:pointer;transition:all .15s}
+.ats-fbtn:hover{border-color:var(--b2);color:var(--t1)}
+.ats-fbtn.active{background:var(--magenta);color:#fff;border-color:var(--magenta)}
+.ats-row{display:flex;align-items:flex-start;gap:11px;padding:11px 13px;border-radius:10px;border:1px solid var(--b1);margin-bottom:8px;background:var(--s2);transition:border-color .15s}
+.ats-row:last-child{margin-bottom:0}
+.ats-row:hover{border-color:var(--b2)}
+.ats-row.done{opacity:.55}
+.ats-cb{width:18px;height:18px;flex-shrink:0;cursor:pointer;accent-color:var(--magenta);margin-top:1px}
+.ats-main{flex:1;min-width:0;cursor:pointer}
+.ats-name{font-size:13px;color:var(--t1);font-weight:500;line-height:1.35}
+.ats-row.done .ats-name{text-decoration:line-through}
+.ats-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:5px}
+.ats-client{font-size:10px;color:var(--t3);display:inline-flex;align-items:center;gap:3px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ats-client::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--b3);flex-shrink:0}
+.ats-pr{font-size:9px;padding:2px 7px;border-radius:5px;font-weight:600;white-space:nowrap;flex-shrink:0;letter-spacing:.02em;text-transform:uppercase}
+.ats-pr.high{background:rgba(204,51,85,.14);color:var(--coral)}
+.ats-pr.mid{background:rgba(232,160,32,.18);color:#B97A10}
+.ats-pr.low{background:rgba(29,138,78,.14);color:var(--success)}
+.ats-dl{font-size:11px;color:var(--t3);white-space:nowrap;flex-shrink:0;display:inline-flex;align-items:center;gap:3px}
+.ats-dl.overdue{color:var(--coral);font-weight:700}
+.ats-dl.today{color:var(--magenta);font-weight:700}
+.ats-empty{text-align:center;color:var(--t3);font-size:12px;padding:22px 0}
+
 /* CLIENT DETAIL PANEL (right side) */
 .client-detail{display:none;position:fixed;top:52px;right:0;bottom:0;width:360px;background:var(--s1);border-left:1px solid var(--b1);z-index:50;flex-direction:column;animation:slideInR .2s ease}
 .client-detail.show{display:flex}
@@ -667,7 +696,7 @@ select.mi{-webkit-appearance:none;cursor:pointer}
     margin-bottom:0;
   }
   .screen-heading{font-size:13px !important;letter-spacing:-.2px !important}
-  .add-btn{font-size:12px;padding:7px 12px}
+  .add-btn{font-size:12px;padding:9px 14px;white-space:nowrap;flex-shrink:0}
 
   /* Сетка дней — горизонтальный snap-scroll */
   .week-grid{
@@ -1365,6 +1394,20 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
     <button class="add-btn" onclick="openClientModal(null)">+ Новый клиент</button>
   </div>
   <div class="clients-grid" id="clientsGrid"></div>
+
+  <!-- ВСЕ ЗАДАЧИ КЛИЕНТОВ -->
+  <div class="all-tasks-section" id="allTasksSection">
+    <div class="ats-header">
+      <div class="ats-title">Все задачи клиентов</div>
+      <div class="ats-count" id="atsCount"></div>
+    </div>
+    <div class="ats-filters">
+      <button class="ats-fbtn active" data-f="active" onclick="setAtsFilter('active')">Активные</button>
+      <button class="ats-fbtn" data-f="all" onclick="setAtsFilter('all')">Все</button>
+      <button class="ats-fbtn" data-f="done" onclick="setAtsFilter('done')">Выполнено</button>
+    </div>
+    <div id="allTasksList"></div>
+  </div>
 </div>
 
 <!-- HABITS -->
@@ -2364,6 +2407,54 @@ function renderClients(){
       ${taskCount>0?`<div class="cc-tasks-count">📋 ${done}/${taskCount} задач выполнено</div>`:`<div class="cc-tasks-count" style="color:var(--t3)">Нажми чтобы добавить задачи</div>`}`;
     g.appendChild(div);
   });
+  renderAllClientTasks();
+}
+
+// ── Общий список задач всех клиентов ───────────────────────────────────────
+let atsFilter='active';
+function setAtsFilter(f){
+  atsFilter=f;
+  document.querySelectorAll('.ats-fbtn').forEach(b=>b.classList.toggle('active',b.dataset.f===f));
+  renderAllClientTasks();
+}
+function renderAllClientTasks(){
+  const wrap=document.getElementById('allTasksList');if(!wrap)return;
+  const todayStr=new Date().toISOString().split('T')[0];
+  let items=[];
+  clients.forEach(cl=>{(cl.tasks||[]).forEach(t=>{items.push({task:t,cid:cl.id,cname:cl.name});});});
+  const activeCount=items.filter(x=>!x.task.done).length;
+  const cntEl=document.getElementById('atsCount');
+  if(cntEl)cntEl.textContent=activeCount?activeCount+' активных':'нет активных';
+  if(atsFilter==='active')items=items.filter(x=>!x.task.done);
+  else if(atsFilter==='done')items=items.filter(x=>x.task.done);
+  const prw={high:0,mid:1,low:2};
+  items.sort((a,b)=>{
+    if(!!a.task.done!==!!b.task.done)return a.task.done?1:-1;
+    const ad=a.task.deadline||'9999-99-99',bd=b.task.deadline||'9999-99-99';
+    if(ad!==bd)return ad<bd?-1:1;
+    return (prw[a.task.priority]??1)-(prw[b.task.priority]??1);
+  });
+  if(!items.length){wrap.innerHTML='<div class="ats-empty">Задач нет</div>';return;}
+  wrap.innerHTML=items.map(({task:t,cid,cname})=>{
+    const hasDl=t.deadline&&t.deadline.length>0;
+    const overdue=hasDl&&t.deadline<todayStr&&!t.done;
+    const today=hasDl&&t.deadline===todayStr;
+    const prLabel=t.priority==='high'?'Высокий':t.priority==='low'?'Низкий':'Средний';
+    const dl=hasDl
+      ?`<span class="ats-dl ${overdue?'overdue':today?'today':''}">${overdue?'⚠ ':today?'📍 ':''}${formatDate(t.deadline)}</span>`
+      :`<span class="ats-dl" style="opacity:.45">Без срока</span>`;
+    return`<div class="ats-row ${t.done?'done':''}">
+      <input type="checkbox" class="ats-cb" ${t.done?'checked':''} onchange="toggleClientTask(${cid},${t.id});renderAllClientTasks()">
+      <div class="ats-main" onclick="openClientDetail(${cid})">
+        <div class="ats-name">${t.text}</div>
+        <div class="ats-meta">
+          <span class="ats-client">${cname}</span>
+          <span class="ats-pr ${t.priority||'mid'}">${prLabel}</span>
+          ${dl}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 function openClientDetail(cid){
