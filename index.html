@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Дмитрий · Ассистент</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1A1A2E">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ассистент">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;500;600;700;800&family=Onest:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -1152,6 +1158,7 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
     <div class="tnav" onclick="goTo('finance')">💰 Финансы</div>
   </div>
   <div class="topbar-right" style="display:flex;align-items:center;gap:8px">
+    <button class="chat-toggle-btn" id="cloudBtn" onclick="cloudAuthClick()" title="Синхронизация">☁ Войти</button>
     <button class="chat-toggle-btn" id="chatToggleBtn" onclick="toggleChat()">💬 ИИ</button>
     <div class="topbar-date" id="hDate"></div>
   </div>
@@ -1758,6 +1765,14 @@ let clients=[
   {id:4,name:'Натяжные потолки',badge:'r',status:'⚡ Срочно',urgent:'⚡ Отправить бриф на этой неделе',rows:[['Статус','Бриф НЕ отправлен','r'],['Модель','CPA + магазин автозапчастей'],['Потенциал','Высокий','a']],tasks:[],notes:''},
   {id:5,name:'Клиент #5',badge:'a',status:'Найти',rows:[['Дедлайн','До июля 2026'],['Модель','Комплексное продвижение'],['Целевой чек','50–80 000 руб/мес','g']],tasks:[],notes:''},
 ];
+function saveClientsLS(){try{localStorage.setItem('clientsData',JSON.stringify(clients));}catch(e){}}
+function loadClientsLS(){
+  try{const d=localStorage.getItem('clientsData');if(d){clients=JSON.parse(d);}}catch(e){}
+  // защита от коллизий id: поднимаем nid выше максимального сохранённого id
+  let mx=0;
+  clients.forEach(cl=>{if(typeof cl.id==='number'&&cl.id>mx)mx=cl.id;(cl.tasks||[]).forEach(t=>{if(typeof t.id==='number'&&t.id>mx)mx=t.id;});});
+  if(mx>=nid)nid=mx+1;
+}
 
 // Calendar events
 let calEvs=[
@@ -1784,6 +1799,19 @@ let curMonth=new Date(2026,4,1);
 let selDay=null;
 const DAYS=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
 const MONTHS=['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+
+// ── Persistence: цели и календарь ──────────────────────────────────────────────
+function bumpNid(arr){arr.forEach(o=>{if(o&&typeof o.id==='number'&&o.id>=nid)nid=o.id+1;});}
+function saveGoalsLS(){try{localStorage.setItem('metricsData',JSON.stringify(metrics));localStorage.setItem('personalGoalsData',JSON.stringify(personalGoals));}catch(e){}}
+function loadGoalsLS(){
+  try{const m=localStorage.getItem('metricsData');if(m)metrics=JSON.parse(m);const p=localStorage.getItem('personalGoalsData');if(p)personalGoals=JSON.parse(p);}catch(e){}
+  bumpNid(metrics);bumpNid(personalGoals);
+}
+function saveCalLS(){try{localStorage.setItem('calEvsData',JSON.stringify(calEvs));localStorage.setItem('mevsData',JSON.stringify(mevs));}catch(e){}}
+function loadCalLS(){
+  try{const c=localStorage.getItem('calEvsData');if(c)calEvs=JSON.parse(c);const m=localStorage.getItem('mevsData');if(m)mevs=JSON.parse(m);}catch(e){}
+  bumpNid(calEvs);Object.values(mevs).forEach(arr=>bumpNid(arr));
+}
 // ── Week helpers ──────────────────────────────────────────────────────────────
 function getMonday(d){const dt=new Date(d);dt.setHours(0,0,0,0);const dow=(dt.getDay()+6)%7;dt.setDate(dt.getDate()-dow);return dt;}
 function weekKey(mon){return mon.getFullYear()+'-'+String(mon.getMonth()+1).padStart(2,'0')+'-'+String(mon.getDate()).padStart(2,'0');}
@@ -1792,7 +1820,7 @@ function weekLabel(mon){const d2=new Date(mon);d2.setDate(d2.getDate()+6);const 
 function updateCmDayOptions(){const sel=document.getElementById('cmDay');if(!sel)return;const cur=parseInt(sel.value)||0;sel.innerHTML=DAYS.map((nm,di)=>{const dd=new Date(curWeek);dd.setDate(dd.getDate()+di);return`<option value="${di}">${nm} ${dd.getDate()}</option>`;}).join('');sel.value=cur;}
 function chWeek(dir){curWeek=getMonday(new Date(curWeek));curWeek.setDate(curWeek.getDate()+dir*7);renderWeek();}
 function loadWeekNote(){const ta=document.getElementById('weekNotesTA');if(!ta)return;ta.value=localStorage.getItem('weekNote_'+weekKey(curWeek))||'';}
-function toggleMEvDone(key,id){const e=(mevs[key]||[]).find(x=>x.id===id);if(!e)return;e.done=!e.done;renderWeek();if(document.getElementById('screen-month').classList.contains('active'))renderMonth();}
+function toggleMEvDone(key,id){const e=(mevs[key]||[]).find(x=>x.id===id);if(!e)return;e.done=!e.done;saveCalLS();renderWeek();if(document.getElementById('screen-month').classList.contains('active'))renderMonth();}
 let curWeek=getMonday(new Date());
 
 // Modal state
@@ -2020,11 +2048,11 @@ function openCalEditM(dk,id){
   updateCmDayOptions();
   document.getElementById('cmDay').value=0;document.getElementById('cmType').value=e.cl||'ev-custom';
   document.getElementById('cmDel').style.display='block';
-  document.getElementById('cmDel').onclick=()=>{if(mevs[dk])mevs[dk]=mevs[dk].filter(x=>x.id!==id);closeCalModal();renderWeek();renderMonth();};
+  document.getElementById('cmDel').onclick=()=>{if(mevs[dk])mevs[dk]=mevs[dk].filter(x=>x.id!==id);saveCalLS();closeCalModal();renderWeek();renderMonth();};
   document.getElementById('calOverlay').classList.add('show');
 }
 function closeCalModal(){document.getElementById('calOverlay').classList.remove('show');}
-function delCalEv(){calEvs=calEvs.filter(e=>e.id!==calEditId);closeCalModal();renderWeek();renderMonth();}
+function delCalEv(){calEvs=calEvs.filter(e=>e.id!==calEditId);saveCalLS();closeCalModal();renderWeek();renderMonth();}
 function saveCalEv(){
   const tx=document.getElementById('cmTxt').value.trim();if(!tx)return;
   const t=document.getElementById('cmTime').value||'10:00';
@@ -2032,6 +2060,7 @@ function saveCalEv(){
   const cl=document.getElementById('cmType').value;
   if(calEditId){const e=calEvs.find(x=>x.id===calEditId);if(e){e.tx=tx;e.t=t;e.day=day;e.cl=cl;}}
   else{const dk=calEditDateKey||weekDayKey(curWeek,day);if(!mevs[dk])mevs[dk]=[];mevs[dk].push({id:nid++,t,tx,cl});}
+  saveCalLS();
   closeCalModal();renderWeek();renderMonth();
 }
 document.getElementById('calOverlay').onclick=e=>{if(e.target===e.currentTarget)closeCalModal();};
@@ -2042,18 +2071,21 @@ document.getElementById('calOverlay').onclick=e=>{if(e.target===e.currentTarget)
 function toggleCalEvDone(id){
   const e=calEvs.find(x=>x.id===id);if(!e)return;
   e.done=!e.done;
+  saveCalLS();
   renderWeek();
   if(document.getElementById('screen-month').classList.contains('active')){renderMonth();}
 }
 function toggleCalEvDoneM(key,id){
   const e=(mevs[key]||[]).find(x=>x.id===id);if(!e)return;
   e.done=!e.done;
+  saveCalLS();
   renderMRight();renderMonthStats();
 }
 function toggleClientTaskFromCal(cid,tid){
   const cl=clients.find(x=>x.id===cid);if(!cl)return;
   const t=cl.tasks.find(x=>x.id===tid);if(!t)return;
   t.done=!t.done;
+  saveClientsLS();
   if(document.getElementById('screen-week').classList.contains('active'))renderWeek();
   if(document.getElementById('screen-month').classList.contains('active')){renderMRight();renderMonthStats();}
 }
@@ -2171,7 +2203,7 @@ function renderFocusTasks(fid){
       <div class="task-body">
         <div class="task-text">${t.text}</div>
         <div class="task-meta">
-          ${t.deadline?`<span class="task-deadline ${overdue?'overdue':''}">${overdue?'⚠️ ':''}}${formatDate(t.deadline)}</span>`:''}
+          ${t.deadline?`<span class="task-deadline ${overdue?'overdue':''}">${overdue?'⚠️ ':''}${formatDate(t.deadline)}</span>`:''}
           <span class="task-priority tp-${t.priority}">${t.priority==='high'?'🔴 Высокий':t.priority==='mid'?'🟡 Средний':'🟢 Низкий'}</span>
         </div>
       </div>
@@ -2285,6 +2317,7 @@ function closeGoalModal(){document.getElementById('goalOverlay').classList.remov
 function delGoal(){
   if(goalEditType==='metric')metrics=metrics.filter(x=>x.id!==goalEditId);
   else personalGoals=personalGoals.filter(x=>x.id!==goalEditId);
+  saveGoalsLS();
   closeGoalModal();renderGoals();renderSidebar();
 }
 function saveGoal(){
@@ -2299,6 +2332,7 @@ function saveGoal(){
     if(goalEditId){const g=personalGoals.find(x=>x.id===goalEditId);if(g){g.name=val;g.detail=label;}}
     else personalGoals.push({id:nid++,name:val,detail:label,color:'#3b82f6'});
   }
+  saveGoalsLS();
   closeGoalModal();renderGoals();renderSidebar();
 }
 document.getElementById('goalOverlay').onclick=e=>{if(e.target===e.currentTarget)closeGoalModal();};
@@ -2385,21 +2419,25 @@ function addClientTask(cid){
   const cl=clients.find(x=>x.id===cid);if(!cl)return;
   cl.tasks.push({id:nid++,text,priority:pr.value,done:false,deadline:dl?dl.value:''});
   inp.value='';if(dl)dl.value='';
+  saveClientsLS();
   const ct=document.getElementById('cdTasks-'+cid);if(ct)ct.innerHTML=renderClientTasks(cid);
 }
 function toggleClientTask(cid,tid){
   const cl=clients.find(x=>x.id===cid);if(!cl)return;
   const t=cl.tasks.find(x=>x.id===tid);if(!t)return;t.done=!t.done;
+  saveClientsLS();
   const ct=document.getElementById('cdTasks-'+cid);if(ct)ct.innerHTML=renderClientTasks(cid);
 }
 function delClientTask(cid,tid){
   const cl=clients.find(x=>x.id===cid);if(!cl)return;
   cl.tasks=cl.tasks.filter(x=>x.id!==tid);
+  saveClientsLS();
   const ct=document.getElementById('cdTasks-'+cid);if(ct)ct.innerHTML=renderClientTasks(cid);
 }
 
 function saveClientNote(cid,val){
   const cl=clients.find(x=>x.id===cid);if(cl)cl.notes=val;
+  saveClientsLS();
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -2427,6 +2465,7 @@ function openClientModal(id){
 function closeClientModal(){document.getElementById('clientOverlay').classList.remove('show');}
 function delClient(){
   clients=clients.filter(x=>x.id!==clientEditId);
+  saveClientsLS();
   closeClientModal();
   if(openClientId===clientEditId)closeClientDetail();
   renderClients();
@@ -2455,6 +2494,7 @@ function saveClient(){
     clients.push({id:nid++,name,badge,status,urgent,rows,tasks:[],notes:'',revenue});
     closeClientModal();
   }
+  saveClientsLS();
   renderClients();
 }
 document.getElementById('clientOverlay').onclick=e=>{if(e.target===e.currentTarget)closeClientModal();};
@@ -2746,7 +2786,7 @@ function saveFocusData(){
   try{localStorage.setItem('focusData',JSON.stringify(focuses));}catch(e){}
   showToast('Сохранено');
 }
-function loadFocusData(){try{const f=localStorage.getItem('focusData');if(f)focuses=JSON.parse(f);}catch(e){}}
+function loadFocusData(){try{const f=localStorage.getItem('focusData');if(f)focuses=JSON.parse(f);}catch(e){}bumpNid(focuses);focuses.forEach(fo=>bumpNid(fo.tasks||[]));}
 function showToast(msg){
   let t=document.getElementById('globalToast');
   if(!t){t=document.createElement('div');t.id='globalToast';
@@ -3350,6 +3390,9 @@ loadNotes();
 loadHabitData();
 loadFocusData();
 loadWeekMonthNotes();
+loadGoalsLS();
+loadCalLS();
+loadClientsLS();
 loadBytovkaData();
 loadFinData();
 pomoRender();
@@ -3393,5 +3436,12 @@ renderSidebar();
 
 <script src="avito-api.js"></script>
 <script src="avito-dashboard.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="cloud.js"></script>
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{});});
+}
+</script>
 </body>
 </html>
