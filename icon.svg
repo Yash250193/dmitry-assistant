@@ -1,12 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#C4306A"/>
-      <stop offset="1" stop-color="#E8A020"/>
-    </linearGradient>
-  </defs>
-  <rect width="512" height="512" rx="112" fill="#1A1A2E"/>
-  <rect x="40" y="40" width="432" height="432" rx="88" fill="url(#g)"/>
-  <text x="256" y="356" font-family="'Unbounded','Segoe UI',sans-serif" font-size="300" font-weight="800"
-        text-anchor="middle" fill="#fff">Д</text>
+  <rect width="512" height="512" rx="112" fill="#F4F0FC"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <!-- внутренняя светлая V -->
+    <path d="M196 150 L256 318" stroke="#E9A8C8" stroke-width="34"/>
+    <path d="M316 150 L256 318" stroke="#E9A8C8" stroke-width="34"/>
+    <!-- внешняя магентовая V -->
+    <path d="M138 138 L256 360" stroke="#C4306A" stroke-width="50"/>
+    <path d="M374 138 L256 360" stroke="#C4306A" stroke-width="50"/>
+  </g>
+  <circle cx="256" cy="418" r="38" fill="#E8A020"/>
 </svg>

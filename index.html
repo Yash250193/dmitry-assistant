@@ -36,7 +36,8 @@ body{background:var(--bg);color:var(--t1);font-family:'Onest',sans-serif;font-si
 /* TOPBAR */
 .topbar{height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;background:var(--s1);border-bottom:1px solid var(--b1);flex-shrink:0;z-index:10}
 .topbar-left{display:flex;align-items:center;gap:14px}
-.logo{width:30px;height:30px;background:linear-gradient(135deg,var(--blue2),var(--purple));border-radius:7px;display:flex;align-items:center;justify-content:center;font-family:'Unbounded',sans-serif;font-size:13px;font-weight:700;color:white;flex-shrink:0}
+.logo{width:32px;height:32px;background:#F4F0FC;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 8px rgba(196,48,106,0.25);overflow:hidden}
+.logo svg{width:30px;height:30px;display:block}
 .topbar-title{font-family:'Unbounded',sans-serif;font-size:12px;font-weight:600;letter-spacing:.04em}
 .topbar-sub{font-size:10px;color:var(--t3)}
 .topbar-nav{display:flex;gap:2px}
@@ -141,9 +142,14 @@ body{background:var(--bg);color:var(--t1);font-family:'Onest',sans-serif;font-si
 @keyframes blink{0%,80%,100%{opacity:.3;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
 
 /* WEEK */
-#screen-week{overflow-y:auto;padding:20px;background:var(--bg)}
-#screen-week::-webkit-scrollbar{width:4px}
-#screen-week::-webkit-scrollbar-thumb{background:var(--b2)}
+#screen-week{flex-direction:row;overflow:hidden;padding:0;background:var(--bg)}
+.week-left{flex:1;min-width:0;overflow-y:auto;padding:20px}
+.week-left::-webkit-scrollbar{width:4px}
+.week-left::-webkit-scrollbar-thumb{background:var(--b2)}
+.week-right{width:300px;flex-shrink:0;overflow-y:auto;padding:20px;background:var(--s1);border-left:1px solid var(--b1)}
+.day-col-head{cursor:pointer}
+.day-col.sel-day{box-shadow:0 0 0 2px var(--magenta);border-color:var(--magenta)}
+.day-col.sel-day .day-col-head{background:rgba(196,48,106,0.10)}
 .week-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
 .screen-heading{font-family:'Unbounded',sans-serif;font-size:14px;font-weight:600}
 .add-btn{background:var(--blue);border:none;border-radius:var(--r);padding:7px 14px;color:white;font-family:'Onest',sans-serif;font-size:11px;cursor:pointer;transition:all .15s}
@@ -190,6 +196,15 @@ body{background:var(--bg);color:var(--t1);font-family:'Onest',sans-serif;font-si
 .mday-dots{display:flex;gap:2px;flex-wrap:wrap}
 .mddot{width:5px;height:5px;border-radius:50%}
 .month-right-title{font-family:'Unbounded',sans-serif;font-size:12px;font-weight:600;margin-bottom:12px;color:var(--t2)}
+/* ── Статус дня ── */
+.dstat-bar{margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--b1)}
+.dstat-label{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);margin-bottom:7px}
+.dstat-chips{display:flex;flex-wrap:wrap;gap:6px}
+.dstat-chip{font-size:11px;padding:5px 11px;border-radius:20px;border:1px solid var(--b2);background:var(--s2);color:var(--t2);cursor:pointer;transition:all .15s;font-family:'Onest',sans-serif;white-space:nowrap}
+.dstat-chip:hover{border-color:var(--b3);color:var(--t1)}
+.dcol-status{display:inline-block;font-size:8px;font-weight:700;color:#fff;padding:1px 6px;border-radius:6px;margin-left:6px;vertical-align:middle;letter-spacing:.02em;text-transform:uppercase}
+.mday-status{border-left-width:3px;border-left-style:solid}
+.mday-status-badge{display:block;font-size:7px;font-weight:700;color:#fff;padding:0 4px;border-radius:4px;margin:1px 0 0;width:fit-content;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:.02em}
 .mrev{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--r);font-size:11px;margin-bottom:4px;cursor:pointer;transition:opacity .15s}
 .mrev:hover{opacity:.8}
 .mrev-time{font-size:9px;min-width:34px;opacity:.6}
@@ -395,6 +410,10 @@ select.mi{-webkit-appearance:none;cursor:pointer}
 .byt-stat-val{font-family:'Unbounded',sans-serif;font-size:18px;font-weight:700;color:var(--t1);line-height:1}
 .byt-stat-val.gold{color:var(--gold)}
 .byt-stat-label{font-size:9px;color:var(--t3);margin-top:4px;text-transform:uppercase;letter-spacing:.06em}
+.byt-tab{cursor:pointer;transition:all .15s;position:relative;-webkit-tap-highlight-color:transparent}
+.byt-tab:hover{border-color:var(--b3)}
+.byt-tab.active{border-color:var(--magenta);background:rgba(196,48,106,0.06);box-shadow:0 0 0 1px var(--magenta) inset}
+.byt-tab.active .byt-stat-val{color:var(--magenta)}
 .byt-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 .byt-card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r2);padding:16px;transition:border-color .15s,opacity .2s}
 .byt-card:hover{border-color:var(--b2)}
@@ -569,6 +588,11 @@ select.mi{-webkit-appearance:none;cursor:pointer}
 .chat-panel-close:hover{color:var(--t1)}
 .chat-toggle-btn{background:var(--s2);border:1px solid var(--b2);border-radius:6px;padding:5px 12px;font-size:11px;font-family:'Onest',sans-serif;color:var(--t2);cursor:pointer;transition:all .15s;white-space:nowrap}
 .chat-toggle-btn:hover{border-color:var(--blue);color:var(--blue)}
+.refresh-btn{background:var(--s2);border:1px solid var(--b2);border-radius:6px;width:34px;height:32px;display:inline-flex;align-items:center;justify-content:center;color:var(--t2);cursor:pointer;transition:all .15s;flex-shrink:0;padding:0}
+.refresh-btn svg{width:16px;height:16px;display:block}
+.refresh-btn:hover{border-color:var(--magenta);color:var(--magenta)}
+.refresh-btn.spinning svg{animation:refreshSpin .8s linear infinite}
+@keyframes refreshSpin{to{transform:rotate(360deg)}}
 .chat-toggle-btn.active{background:var(--blue3);border-color:var(--blue2);color:#93c5fd}
 
 /* NOTEBOOK */
@@ -684,7 +708,9 @@ select.mi{-webkit-appearance:none;cursor:pointer}
   .bnav.active span{font-weight:700}
 
   /* ── WEEK SCREEN ── */
-  #screen-week{padding:0;overflow-y:auto;overflow-x:hidden}
+  #screen-week,#screen-week.active{padding:0;overflow-y:auto;overflow-x:hidden;flex-direction:column}
+  .week-left{overflow-y:visible;padding:0;flex:none}
+  .week-right{width:100%;padding:12px 14px 16px;background:var(--frost);border-left:none;border-top:1px solid var(--border)}
 
   /* Тулбар — не скролится горизонтально */
   .week-scroll{overflow-x:hidden;padding:0}
@@ -886,9 +912,11 @@ body.light{
 .tnav:hover{color:rgba(255,255,255,0.85);background:rgba(255,255,255,0.08);border-color:transparent}
 .tnav.active{color:#FFFFFF;background:rgba(196,48,106,0.25);border-color:rgba(196,48,106,0.4)}
 .topbar-date{color:rgba(255,255,255,0.45);background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12)}
-.logo{background:var(--magenta);font-family:'Unbounded',sans-serif;font-size:13px;font-weight:700}
+.logo{background:#F4F0FC}
 .chat-toggle-btn{background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.15);color:rgba(255,255,255,0.7);font-family:'Onest',sans-serif}
 .chat-toggle-btn:hover{border-color:rgba(196,48,106,0.6);color:rgba(255,255,255,0.9);background:rgba(255,255,255,0.12)}
+.refresh-btn{background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.15);color:rgba(255,255,255,0.7)}
+.refresh-btn:hover{border-color:rgba(196,48,106,0.6);color:#fff;background:rgba(255,255,255,0.12)}
 .chat-toggle-btn.active{background:rgba(196,48,106,0.2);border-color:var(--magenta);color:#FFFFFF}
 .sb-toggle{border-color:rgba(255,255,255,0.15);color:rgba(255,255,255,0.6);background:transparent}
 .sb-toggle:hover{border-color:rgba(255,255,255,0.3);color:#FFFFFF;background:rgba(255,255,255,0.08)}
@@ -1180,8 +1208,8 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
 <div class="topbar">
   <div class="topbar-left">
     <button class="sb-toggle" id="sbToggle" onclick="toggleSidebar()">☰</button>
-    <div class="logo">Д</div>
-    <div class="topbar-info"><div class="topbar-title">АССИСТЕНТ · МАСТЕР-ПЛАН</div><div class="topbar-sub">Дмитрий · 18 мая 2026 — Ноябрь 2026</div></div>
+    <div class="logo"><svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg"><g fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M44 34 L60 74" stroke="#E9A8C8" stroke-width="9"/><path d="M76 34 L60 74" stroke="#E9A8C8" stroke-width="9"/><path d="M30 30 L60 84" stroke="#C4306A" stroke-width="13"/><path d="M90 30 L60 84" stroke="#C4306A" stroke-width="13"/></g><circle cx="60" cy="98" r="9" fill="#E8A020"/></svg></div>
+    <div class="topbar-info"><div class="topbar-title">ЛИДТЕКА</div><div class="topbar-sub">Мастер-план</div></div>
   </div>
   <div class="topbar-nav">
     <div class="tnav active" onclick="goTo('week')">📅 Неделя</div>
@@ -1196,6 +1224,9 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
     <div class="tnav" onclick="goTo('finance')">💰 Финансы</div>
   </div>
   <div class="topbar-right" style="display:flex;align-items:center;gap:8px">
+    <button class="refresh-btn" id="refreshBtn" onclick="refreshApp()" title="Обновить данные" aria-label="Обновить">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+    </button>
     <button class="chat-toggle-btn" id="cloudBtn" onclick="cloudAuthClick()" title="Синхронизация">☁ Войти</button>
     <button class="chat-toggle-btn" id="chatToggleBtn" onclick="toggleChat()">💬 ИИ</button>
     <div class="topbar-date" id="hDate"></div>
@@ -1303,30 +1334,36 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
 
 <!-- WEEK -->
 <div class="screen active" id="screen-week">
-  <div class="week-scroll">
-    <div class="week-toolbar">
-      <div style="display:flex;align-items:center;gap:6px">
-        <button class="mnav" onclick="chWeek(-1)">←</button>
-        <div class="screen-heading" id="weekHeading">Неделя</div>
-        <button class="mnav" onclick="chWeek(1)">→</button>
+  <div class="week-left">
+    <div class="week-scroll">
+      <div class="week-toolbar">
+        <div style="display:flex;align-items:center;gap:6px">
+          <button class="mnav" onclick="chWeek(-1)">←</button>
+          <div class="screen-heading" id="weekHeading">Неделя</div>
+          <button class="mnav" onclick="chWeek(1)">→</button>
+        </div>
+        <button class="add-btn" onclick="openCalAdd(null,null)">+ Добавить задачу</button>
       </div>
-      <button class="add-btn" onclick="openCalAdd(null,null)">+ Добавить задачу</button>
+      <div class="week-grid" id="weekGrid"></div>
+    </div><!-- /week-scroll -->
+    <div class="stats-block" id="weekStatsBlock">
+      <div class="stats-block-head">
+        <div class="stats-block-title">Продуктивность недели</div>
+        <div class="stats-chips" id="weekStatsChips"></div>
+      </div>
+      <div class="bar-chart-wrap" id="weekStatsChart"></div>
     </div>
-    <div class="week-grid" id="weekGrid"></div>
-  </div><!-- /week-scroll -->
-  <div class="stats-block" id="weekStatsBlock">
-    <div class="stats-block-head">
-      <div class="stats-block-title">Продуктивность недели</div>
-      <div class="stats-chips" id="weekStatsChips"></div>
+    <div class="notes-block">
+      <div class="notes-block-head">
+        <div class="notes-block-title" id="weekNotesTitle">Заметки на неделю</div>
+        <div class="notes-saved" id="weekNotesSaved">сохранено ✓</div>
+      </div>
+      <textarea class="notes-ta" id="weekNotesTA" placeholder="Свободные мысли, цели, идеи на эту неделю..." oninput="saveWeekNote(this.value)"></textarea>
     </div>
-    <div class="bar-chart-wrap" id="weekStatsChart"></div>
   </div>
-  <div class="notes-block">
-    <div class="notes-block-head">
-      <div class="notes-block-title" id="weekNotesTitle">Заметки на неделю</div>
-      <div class="notes-saved" id="weekNotesSaved">сохранено ✓</div>
-    </div>
-    <textarea class="notes-ta" id="weekNotesTA" placeholder="Свободные мысли, цели, идеи на эту неделю..." oninput="saveWeekNote(this.value)"></textarea>
+  <div class="week-right">
+    <div class="month-right-title" id="wrTitle">Выберите день</div>
+    <div id="wrList"></div>
   </div>
 </div>
 
@@ -1515,14 +1552,7 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
 <div class="screen" id="screen-bytovka">
   <div class="byt-toolbar">
     <div class="screen-heading">Бытовка</div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <div class="byt-filters">
-        <button class="byt-filter active" onclick="setBytFilter('all',this)">Все</button>
-        <button class="byt-filter" onclick="setBytFilter('active',this)">Активные</button>
-        <button class="byt-filter" onclick="setBytFilter('done',this)">Выполнено</button>
-      </div>
-      <button class="add-btn" onclick="openBytModal(null)">+ Добавить</button>
-    </div>
+    <button class="add-btn" onclick="openBytModal(null)">+ Добавить</button>
   </div>
   <div class="byt-stats" id="bytStats"></div>
   <div class="byt-grid" id="bytGrid"></div>
@@ -1847,8 +1877,9 @@ let calEvs=[
   {id:32,day:6,t:'12:00',tx:'Итоги + план 18–24 мая',cl:'ev-blog'},{id:33,day:6,t:'14:00',tx:'Claude code курс 1/3',cl:'ev-ii'},{id:34,day:6,t:'15:00',tx:'Отдых',cl:'ev-rest'},
 ];
 let mevs={};
-let curMonth=new Date(2026,4,1);
+let curMonth=new Date(new Date().getFullYear(),new Date().getMonth(),1);
 let selDay=null;
+let selWeekDay=null; // date key 'YYYY-MM-DD' выбранного дня в разделе Неделя
 const DAYS=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
 const MONTHS=['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
 
@@ -1863,6 +1894,33 @@ function saveCalLS(){try{localStorage.setItem('calEvsData',JSON.stringify(calEvs
 function loadCalLS(){
   try{const c=localStorage.getItem('calEvsData');if(c)calEvs=JSON.parse(c);const m=localStorage.getItem('mevsData');if(m)mevs=JSON.parse(m);}catch(e){}
   bumpNid(calEvs);Object.values(mevs).forEach(arr=>bumpNid(arr));
+}
+
+// ── Статусы дня (Выходной/Офис/Дом/В дороге/В городе) ──────────────────────
+const DAY_STATUS={
+  weekend:{label:'Выходной',color:'#CC3355'},
+  office :{label:'Офис',    color:'#3B82F6'},
+  home   :{label:'Дом',     color:'#1D8A4E'},
+  road   :{label:'В дороге', color:'#E8A020'},
+  city   :{label:'В городе', color:'#A855F7'}
+};
+let dayStatuses={};
+function saveDayStatuses(){try{localStorage.setItem('dayStatuses',JSON.stringify(dayStatuses));}catch(e){}}
+function loadDayStatuses(){try{const d=localStorage.getItem('dayStatuses');if(d)dayStatuses=JSON.parse(d);}catch(e){}}
+function setDayStatus(dk,key){
+  if(dayStatuses[dk]===key)delete dayStatuses[dk];else dayStatuses[dk]=key;
+  saveDayStatuses();
+  if(document.getElementById('screen-week').classList.contains('active'))renderWeek();
+  if(document.getElementById('screen-month').classList.contains('active'))renderMonth();
+}
+function dayStatusBar(dk){
+  const cur=dayStatuses[dk]||'';
+  const chips=Object.keys(DAY_STATUS).map(k=>{
+    const s=DAY_STATUS[k];const active=cur===k;
+    const style=active?`background:${s.color};border-color:${s.color};color:#fff`:'';
+    return`<button class="dstat-chip${active?' active':''}" style="${style}" onclick="setDayStatus('${dk}','${k}')">${s.label}</button>`;
+  }).join('');
+  return`<div class="dstat-bar"><div class="dstat-label">Статус дня</div><div class="dstat-chips">${chips}</div></div>`;
 }
 // ── Week helpers ──────────────────────────────────────────────────────────────
 function getMonday(d){const dt=new Date(d);dt.setHours(0,0,0,0);const dow=(dt.getDay()+6)%7;dt.setDate(dt.getDate()-dow);return dt;}
@@ -1929,6 +1987,18 @@ function toggleChat(){
   if(open)document.getElementById('inp').focus();
 }
 
+// Ручное обновление данных: подтянуть из облака (если вошли) и перезагрузить
+function refreshApp(){
+  const btn=document.getElementById('refreshBtn');
+  if(btn)btn.classList.add('spinning');
+  if(typeof cloudSyncNow==='function' && navigator.onLine){
+    try{ cloudSyncNow(); }catch(e){}
+  }
+  // Перезагрузка перечитывает localStorage и перерисовывает все разделы.
+  // Если облако вернёт более свежие данные, cloud.js перезагрузит ещё раз сам.
+  setTimeout(()=>location.reload(), 600);
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // SIDEBAR
 // ═══════════════════════════════════════════════════════════════════
@@ -1988,14 +2058,23 @@ function renderWeek(){
   if(h)h.textContent='Неделя '+weekLabel(curWeek);
   const g=document.getElementById('weekGrid');g.innerHTML='';
   const todayMs=new Date(new Date().setHours(0,0,0,0)).getTime();
+  // Выбранный день по умолчанию: сегодня (если в текущей неделе) иначе понедельник
+  const weekKeys=DAYS.map((_,i)=>weekDayKey(curWeek,i));
+  if(!selWeekDay||weekKeys.indexOf(selWeekDay)<0){
+    const todayKey=dateKeyFromDate(new Date());
+    selWeekDay=weekKeys.indexOf(todayKey)>=0?todayKey:weekKeys[0];
+  }
   DAYS.forEach((_,di)=>{
     const dayDate=new Date(curWeek);dayDate.setDate(dayDate.getDate()+di);
     const y=dayDate.getFullYear(),m=dayDate.getMonth(),d=dayDate.getDate();
     const dk=weekDayKey(curWeek,di);
     const de=getDayEvs(y,m,d);
     const isToday=dayDate.getTime()===todayMs;
-    const col=document.createElement('div');col.className='day-col';
-    col.innerHTML=`<div class="day-col-head${isToday?' dcol-today':''}"><div class="dcol-name">${DAYS[di]}</div><div class="dcol-date">${d}</div></div>
+    const st=dayStatuses[dk];
+    const stStyle=st?` style="border-left:4px solid ${DAY_STATUS[st].color}"`:'';
+    const stBadge=st?`<span class="dcol-status" style="background:${DAY_STATUS[st].color}">${DAY_STATUS[st].label}</span>`:'';
+    const col=document.createElement('div');col.className='day-col'+(selWeekDay===dk?' sel-day':'');
+    col.innerHTML=`<div class="day-col-head${isToday?' dcol-today':''}"${stStyle} onclick="selectWeekDay('${dk}')"><div class="dcol-name">${DAYS[di]}${stBadge}</div><div class="dcol-date">${d}</div></div>
       <div class="day-col-body">${de.map(e=>{const isCE=e.day!==undefined;const isCT=e._ctask;const ef=isCE?`openCalEdit(${e.id})`:isCT?`openClientDetail(${e._cid})`:`openCalEditM('${dk}',${e.id})`;const tf=isCE?`toggleCalEvDone(${e.id})`:isCT?`toggleClientTaskFromCal(${e._cid},${e.id})`:`toggleMEvDone('${dk}',${e.id})`;return`<div class="cal-ev ${e.cl}${e.done?' ev-done':''}">
         <span class="ev-time-small">${e.t}</span>
         <span class="ev-tx" onclick="${ef}">${e.tx}</span>
@@ -2006,6 +2085,36 @@ function renderWeek(){
   });
   loadWeekNote();
   renderWeekStats();
+  renderWeekRight();
+}
+function dateKeyFromDate(dt){return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');}
+function selectWeekDay(dk){selWeekDay=dk;renderWeek();}
+function renderWeekRight(){
+  const t=document.getElementById('wrTitle'),l=document.getElementById('wrList');
+  if(!t||!l)return;
+  if(!selWeekDay){t.textContent='Выберите день';l.innerHTML='<div class="no-evs">Нажмите на день</div>';return;}
+  const [yy,mm,dd]=selWeekDay.split('-').map(Number);
+  const de=getDayEvs(yy,mm-1,dd);
+  const doneCnt=de.filter(e=>e.done).length;
+  const st=dayStatuses[selWeekDay];
+  t.innerHTML=`${dd} ${MONTHS[mm-1]} · ${doneCnt}/${de.length} выполнено`;
+  const cmap={'ev-ritual':'#f43f5e','ev-intel':'#14b8a6','ev-avito':'#3b82f6','ev-ii':'#22c55e','ev-blog':'#a855f7','ev-land':'#f59e0b','ev-rest':'#6b7280','ev-eve':'#f43f5e','ev-custom':'#3b82f6','ev-client':'#C4306A'};
+  const evHtml=de.length?de.map(e=>{
+    const isWeek=e.day!==undefined;const isCT=e._ctask;
+    const chkFn=isWeek?`toggleCalEvDone(${e.id})`:isCT?`toggleClientTaskFromCal(${e._cid},${e.id})`:`toggleMEvDoneWeek('${selWeekDay}',${e.id})`;
+    const editFn=isWeek?`openCalEdit(${e.id})`:isCT?`openClientDetail(${e._cid})`:`openCalEditM('${selWeekDay}',${e.id})`;
+    return`<div class="mrev ${e.cl}${e.done?' ev-done':''}">
+      <span class="mrev-chk" onclick="${chkFn}">${e.done?'✓':'○'}</span>
+      <span class="mrev-time">${e.t}</span>
+      <div class="mrev-dot" style="background:${cmap[e.cl]||'#3b82f6'}"></div>
+      <span class="mrev-tx" onclick="${editFn}" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer">${e.tx}</span>
+    </div>`;
+  }).join(''):'<div class="no-evs">Нет задач</div>';
+  l.innerHTML=dayStatusBar(selWeekDay)+evHtml+`<div class="add-month-btn" onclick="openCalAdd(null,'${selWeekDay}')">＋ Добавить задачу</div>`;
+}
+function toggleMEvDoneWeek(key,id){
+  const e=(mevs[key]||[]).find(x=>x.id===id);if(!e)return;
+  e.done=!e.done;saveCalLS();renderWeek();
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -2038,9 +2147,12 @@ function renderMonth(){
     const key=`${y}-${String(m+1).padStart(2,'0')}-${String(c.d).padStart(2,'0')}`;
     if(!c.other&&c.d===today.getDate()&&m===today.getMonth()&&y===today.getFullYear())div.classList.add('today');
     if(selDay&&selDay.key===key)div.classList.add('selected');
+    const stKey=c.other?null:dayStatuses[key];
+    if(stKey&&DAY_STATUS[stKey]){const sc=DAY_STATUS[stKey].color;div.classList.add('mday-status');div.style.borderLeftColor=sc;div.style.background=sc+'14';}
     const de=c.other?[]:getDayEvs(y,m,c.d);
     if(de.length)div.classList.add('has-events');
-    div.innerHTML=`<div class="mday-n">${c.d}</div><div class="mday-dots">${de.slice(0,5).map(e=>`<div class="mddot" style="background:${cmap[e.cl]||'#3b82f6'}"></div>`).join('')}</div>`;
+    const stBadge=stKey&&DAY_STATUS[stKey]?`<span class="mday-status-badge" style="background:${DAY_STATUS[stKey].color}">${DAY_STATUS[stKey].label}</span>`:'';
+    div.innerHTML=`<div class="mday-n">${c.d}</div>${stBadge}<div class="mday-dots">${de.slice(0,5).map(e=>`<div class="mddot" style="background:${cmap[e.cl]||'#3b82f6'}"></div>`).join('')}</div>`;
     if(!c.other)div.onclick=()=>{selDay={y,m,d:c.d,key};renderMonth();renderMRight();};
     g.appendChild(div);
   });
@@ -2065,7 +2177,7 @@ function renderMRight(){
       <span class="mrev-tx" onclick="${editFn}" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer">${e.tx}</span>
     </div>`;
   }).join(''):'<div class="no-evs">Нет задач</div>';
-  l.innerHTML=evHtml+`<div class="add-month-btn" onclick="openCalAdd(null,'${selDay.key}')">＋ Добавить задачу</div>`;
+  l.innerHTML=dayStatusBar(selDay.key)+evHtml+`<div class="add-month-btn" onclick="openCalAdd(null,'${selDay.key}')">＋ Добавить задачу</div>`;
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -3043,10 +3155,8 @@ function loadBytovkaData(){
   renderBytovka();
 }
 
-function setBytFilter(f,btn){
+function setBytFilter(f){
   bytFilter=f;
-  document.querySelectorAll('.byt-filter').forEach(b=>b.classList.remove('active'));
-  if(btn)btn.classList.add('active');
   renderBytovka();
 }
 
@@ -3061,9 +3171,9 @@ function renderBytovka(){
   const budget=bytovkaTasks.filter(t=>!t.done&&t.budget).reduce((s,t)=>s+(parseFloat(t.budget)||0),0);
 
   statsEl.innerHTML=`
-    <div class="byt-stat"><div class="byt-stat-val">${total}</div><div class="byt-stat-label">Всего</div></div>
-    <div class="byt-stat"><div class="byt-stat-val">${active}</div><div class="byt-stat-label">Активные</div></div>
-    <div class="byt-stat"><div class="byt-stat-val">${done}</div><div class="byt-stat-label">Выполнено</div></div>
+    <div class="byt-stat byt-tab${bytFilter==='all'?' active':''}" onclick="setBytFilter('all')"><div class="byt-stat-val">${total}</div><div class="byt-stat-label">Всего</div></div>
+    <div class="byt-stat byt-tab${bytFilter==='active'?' active':''}" onclick="setBytFilter('active')"><div class="byt-stat-val">${active}</div><div class="byt-stat-label">Активные</div></div>
+    <div class="byt-stat byt-tab${bytFilter==='done'?' active':''}" onclick="setBytFilter('done')"><div class="byt-stat-val">${done}</div><div class="byt-stat-label">Выполнено</div></div>
     ${budget>0?`<div class="byt-stat"><div class="byt-stat-val gold">${budget.toLocaleString('ru')} ₽</div><div class="byt-stat-label">Бюджет актив.</div></div>`:''}
   `;
 
@@ -3495,6 +3605,7 @@ loadFocusData();
 loadWeekMonthNotes();
 loadGoalsLS();
 loadCalLS();
+loadDayStatuses();
 loadClientsLS();
 loadBytovkaData();
 loadFinData();

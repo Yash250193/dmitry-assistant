@@ -1,5 +1,5 @@
-// Service Worker — оффлайн-оболочка приложения
-const CACHE='assistant-v1';
+// Service Worker — оффлайн-оболочка приложения + push-уведомления
+const CACHE='assistant-v2';
 const SHELL=[
   './',
   './index.html',
@@ -51,4 +51,29 @@ self.addEventListener('fetch',e=>{
       return cached||net;
     })
   );
+});
+
+// ── Push-уведомления ───────────────────────────────────────────────────────
+self.addEventListener('push', e=>{
+  let d={title:'Лидтека',body:'',url:'./index.html'};
+  try{ d=Object.assign(d, e.data.json()); }catch(_){ if(e.data){try{d.body=e.data.text();}catch(__){}} }
+  e.waitUntil(self.registration.showNotification(d.title,{
+    body:d.body,
+    icon:'./icon-192.png',
+    badge:'./icon-192.png',
+    data:{url:d.url||'./index.html'},
+    vibrate:[80,40,80],
+    tag:d.tag||'leadteka-digest',
+    renotify:true
+  }));
+});
+
+self.addEventListener('notificationclick', e=>{
+  e.notification.close();
+  const target=(e.notification.data&&e.notification.data.url)||'./index.html';
+  e.waitUntil((async()=>{
+    const wins=await self.clients.matchAll({type:'window',includeUncontrolled:true});
+    for(const c of wins){ if('focus' in c){ await c.focus(); return; } }
+    if(self.clients.openWindow) await self.clients.openWindow(target);
+  })());
 });
