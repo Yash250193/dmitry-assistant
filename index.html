@@ -1586,7 +1586,10 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
 <div class="chat-panel" id="chatPanel">
   <div class="chat-panel-hdr">
     <div class="chat-panel-title">ИИ АССИСТЕНТ</div>
-    <button class="chat-panel-close" onclick="toggleChat()">×</button>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button onclick="clearChatHistory()" style="background:none;border:none;color:var(--t3);font-size:11px;cursor:pointer;font-family:'Onest',sans-serif;padding:3px 7px;border-radius:5px;border:1px solid var(--b2)" title="Очистить историю">🗑 Очистить</button>
+      <button class="chat-panel-close" onclick="toggleChat()">×</button>
+    </div>
   </div>
   <div class="chat-area" id="chatArea">
     <div class="msg bot">
@@ -2755,7 +2758,44 @@ const CTX=`Ты персональный ассистент Дмитрия. Зн
 Отвечай кратко конкретно по-русски. Как умный друг. Никакой воды.`;
 let msgs=[{role:'user',content:CTX+'\n\nПодтверди контекст одной фразой.'}];
 let inited=false;
-async function initAI(){if(inited)return;inited=true;try{const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:300,messages:msgs})});const d=await r.json();msgs.push({role:'assistant',content:d.content?.[0]?.text||''});}catch(e){}}
+let chatLog=[];
+const CHAT_LS='chatHistory';
+
+function saveChatHistory(){
+  try{
+    const payload={msgs:msgs.slice(1),log:chatLog.slice(-200)};
+    localStorage.setItem(CHAT_LS,JSON.stringify(payload));
+  }catch(e){}
+}
+
+function loadChatHistory(){
+  try{
+    const raw=localStorage.getItem(CHAT_LS);if(!raw)return;
+    const saved=JSON.parse(raw);
+    if(!saved||!saved.log||!saved.log.length)return;
+    if(saved.msgs&&saved.msgs.length){msgs=[...msgs,...saved.msgs];inited=true;}
+    const a=document.getElementById('chatArea');if(!a)return;
+    a.innerHTML='';chatLog=saved.log;
+    chatLog.forEach(m=>{
+      const d=document.createElement('div');d.className='msg '+(m.role==='user'?'user':'bot');
+      const fb=m.fi?`<div class="file-badge">📄 ${m.fi}</div>`:'';
+      d.innerHTML=`<div class="msg-av">${m.role==='user'?'Д':'AI'}</div><div class="msg-body"><div class="msg-bubble">${fb}${m.text.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<b>$1</b>')}</div><div class="msg-time">${m.time}</div></div>`;
+      a.appendChild(d);
+    });
+    a.scrollTop=a.scrollHeight;
+    if(chatLog.length)document.getElementById('suggs').style.display='none';
+  }catch(e){}
+}
+
+function clearChatHistory(){
+  if(!confirm('Очистить всю историю чата?'))return;
+  chatLog=[];msgs=[{role:'user',content:CTX+'\n\nПодтверди контекст одной фразой.'}];inited=false;
+  try{localStorage.removeItem(CHAT_LS);}catch(e){}
+  const a=document.getElementById('chatArea');if(a)a.innerHTML=`<div class="msg bot"><div class="msg-av">AI</div><div class="msg-body"><div class="msg-bubble">Привет, Дмитрий.<br><br>Знаю весь твой мастер-план, клиентов и цели до ноября. Пиши, говори голосом или прикрепи файл — отвечу конкретно.</div><div class="msg-time">сейчас</div></div></div>`;
+  document.getElementById('suggs').style.display='';
+}
+
+async function initAI(){if(inited)return;inited=true;try{const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:300,messages:msgs})});const d=await r.json();msgs.push({role:'assistant',content:d.content?.[0]?.text||''});saveChatHistory();}catch(e){}}
 
 let rec=null,isRec=false;
 function toggleVoice(){
@@ -2784,6 +2824,7 @@ function addMsg(role,text,fi){
   const fb=fi?`<div class="file-badge">📄 ${fi}</div>`:'';
   d.innerHTML=`<div class="msg-av">${role==='user'?'Д':'AI'}</div><div class="msg-body"><div class="msg-bubble">${fb}${text.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<b>$1</b>')}</div><div class="msg-time">${now}</div></div>`;
   a.appendChild(d);a.scrollTop=a.scrollHeight;
+  chatLog.push({role,text,fi:fi||null,time:now});saveChatHistory();
 }
 function addTyping(){const a=document.getElementById('chatArea');const d=document.createElement('div');d.className='msg bot';d.id='typing';d.innerHTML=`<div class="msg-av">AI</div><div class="typing"><span></span><span></span><span></span></div>`;a.appendChild(d);a.scrollTop=a.scrollHeight;}
 
@@ -2799,7 +2840,7 @@ async function send(){
   try{
     const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:msgs})});
     const data=await r.json();const reply=data.content?.[0]?.text||'Ошибка. Попробуй ещё.';
-    msgs.push({role:'assistant',content:reply});document.getElementById('typing')?.remove();addMsg('bot',reply);
+    msgs.push({role:'assistant',content:reply});saveChatHistory();document.getElementById('typing')?.remove();addMsg('bot',reply);
   }catch(e){document.getElementById('typing')?.remove();addMsg('bot','Ошибка соединения. Нужен API ключ.');}
   btn.disabled=false;
 }
@@ -3629,6 +3670,7 @@ loadTheme();
 loadNotes();
 loadHabitData();
 loadFocusData();
+loadChatHistory();
 loadWeekMonthNotes();
 loadGoalsLS();
 loadCalLS();
