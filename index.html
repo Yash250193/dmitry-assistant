@@ -181,6 +181,9 @@ body{background:var(--bg);color:var(--t1);font-family:'Onest',sans-serif;font-si
 .ev-blog{background:#1a0935;color:#d8b4fe}.ev-land{background:#251500;color:#fde68a}
 .ev-rest{background:#111;color:#6b7280}.ev-eve{background:#2d0011;color:#fda4af}
 .ev-custom{background:#0f1f3d;color:#93c5fd}
+.prio-badge{font-weight:800;font-size:9px;letter-spacing:.5px;flex-shrink:0;line-height:1;margin-left:auto;padding-top:1px}
+.mrev .prio-badge{font-size:11px;font-weight:800;margin-left:4px;flex-shrink:0}
+.ev-client{background:#2E0A18;color:#f9a8d4}
 
 /* MONTH */
 #screen-month{display:none;flex:1;overflow:hidden;flex-direction:row}
@@ -1658,6 +1661,17 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
         <option value="ev-rest">Отдых</option><option value="ev-eve">Личное</option><option value="ev-custom">Другое</option>
       </select>
     </div>
+    <div class="mi-row">
+      <div class="mf"><div class="ml">Приоритет</div>
+        <select class="mi" id="cmPriority">
+          <option value="">— нет —</option>
+          <option value="low">! Низкий</option>
+          <option value="mid">!! Средний</option>
+          <option value="high">!!! Высокий</option>
+        </select>
+      </div>
+      <div class="mf"><div class="ml">Дедлайн</div><input class="mi" id="cmDeadline" type="date"></div>
+    </div>
     <div class="modal-btns">
       <button class="mbtn danger" id="cmDel" onclick="delCalEv()" style="display:none">Удалить</button>
       <button class="mbtn secondary" onclick="closeCalModal()">Отмена</button>
@@ -2077,6 +2091,32 @@ function renderSbPersonal(){
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+// PRIORITY BADGE
+// ═══════════════════════════════════════════════════════════════════
+function priorityBadge(e){
+  if(!e.priority)return '';
+  const marks=e.priority==='high'?'!!!':e.priority==='mid'?'!!':'!';
+  let color='var(--t3)';
+  if(e.deadline){
+    if(e.done){
+      color='var(--t3)';
+    }else{
+      const today=new Date();today.setHours(0,0,0,0);
+      const dl=new Date(e.deadline+'T00:00:00');
+      const diff=Math.round((dl-today)/86400000);
+      if(diff<0)color='#666';           // просрочено — чёрный/серый
+      else if(diff===0)color='#CC3355'; // сегодня — красный
+      else if(diff<=2)color='#E8A020';  // менее 2 дней — жёлтый
+      else color='#1D8A4E';             // более 2 дней — зелёный
+    }
+  }else{
+    if(!e.done)color=e.priority==='high'?'#CC3355':e.priority==='mid'?'#E8A020':'#1D8A4E';
+  }
+  const dl=e.deadline&&!e.done?`<span style="font-size:7.5px;opacity:.7;white-space:nowrap"> ${e.deadline.slice(5).replace('-','.')}</span>`:'';
+  return `<span class="prio-badge" style="color:${color}" title="Приоритет · дедлайн ${e.deadline||'не задан'}">${marks}${dl}</span>`;
+}
+
 // WEEK CALENDAR
 // ═══════════════════════════════════════════════════════════════════
 function renderWeek(){
@@ -2104,6 +2144,7 @@ function renderWeek(){
       <div class="day-col-body">${de.map(e=>{const isCE=e.day!==undefined;const isCT=e._ctask;const ef=isCE?`openCalEdit(${e.id})`:isCT?`openClientDetail(${e._cid})`:`openCalEditM('${dk}',${e.id})`;const tf=isCE?`toggleCalEvDone(${e.id})`:isCT?`toggleClientTaskFromCal(${e._cid},${e.id})`:`toggleMEvDone('${dk}',${e.id})`;return`<div class="cal-ev ${e.cl}${e.done?' ev-done':''}">
         <span class="ev-time-small">${e.t}</span>
         <span class="ev-tx" onclick="${ef}">${e.tx}</span>
+        ${priorityBadge(e)}
         <span class="ev-chk" onclick="event.stopPropagation();${tf}" title="${e.done?'Снять отметку':'Отметить выполненным'}">${e.done?'✓':'·'}</span>
       </div>`;}).join('')}
       <div class="add-ev-row" onclick="openCalAdd(null,'${dk}')">＋ добавить</div></div>`;
@@ -2136,6 +2177,7 @@ function renderWeekRight(){
       <span class="mrev-time">${e.t}</span>
       <div class="mrev-dot" style="background:${cmap[e.cl]||'#3b82f6'}"></div>
       <span class="mrev-tx" onclick="${editFn}" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer">${e.tx}</span>
+      ${priorityBadge(e)}
     </div>`;
   }).join(''):'<div class="no-evs">Нет задач</div>';
   l.innerHTML=dayStatusBar(selWeekDay)+evHtml+`<div class="add-month-btn" onclick="openCalAdd(null,'${selWeekDay}')">＋ Добавить задачу</div>`;
@@ -2153,7 +2195,7 @@ function getDayEvs(y,m,d){
   const key=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
   const custom=mevs[key]||[];
   const ctasks=[];
-  clients.forEach(cl=>{(cl.tasks||[]).forEach(t=>{if(t.deadline===key)ctasks.push({id:t.id,t:'00:00',tx:cl.name+': '+t.text,cl:'ev-client',done:t.done,_cid:cl.id,_ctask:true});});});
+  clients.forEach(cl=>{(cl.tasks||[]).forEach(t=>{if(t.deadline===key)ctasks.push({id:t.id,t:'00:00',tx:cl.name+': '+t.text,cl:'ev-client',done:t.done,priority:t.priority,deadline:t.deadline,_cid:cl.id,_ctask:true});});});
   let base=[];
   if(y===2026&&m===4&&d>=11&&d<=17)base=calEvs.filter(e=>e.day===d-11);
   return[...base,...custom,...ctasks].sort((a,b)=>a.t.localeCompare(b.t));
@@ -2205,6 +2247,7 @@ function renderMRight(){
       <span class="mrev-time">${e.t}</span>
       <div class="mrev-dot" style="background:${cmap[e.cl]||'#3b82f6'}"></div>
       <span class="mrev-tx" onclick="${editFn}" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer">${e.tx}</span>
+      ${priorityBadge(e)}
     </div>`;
   }).join(''):'<div class="no-evs">Нет задач</div>';
   l.innerHTML=dayStatusBar(selDay.key)+evHtml+`<div class="add-month-btn" onclick="openCalAdd(null,'${selDay.key}')">＋ Добавить задачу</div>`;
@@ -2221,6 +2264,8 @@ function openCalAdd(day,dateKey){
   if(dateKey){const dd=new Date(dateKey+'T00:00:00');const di=Math.round((dd-curWeek)/86400000);document.getElementById('cmDay').value=di>=0&&di<7?di:0;}
   else document.getElementById('cmDay').value=day!==null?day:0;
   document.getElementById('cmType').value='ev-custom';
+  document.getElementById('cmPriority').value='';
+  document.getElementById('cmDeadline').value=dateKey||'';
   document.getElementById('cmDel').style.display='none';
   document.getElementById('calOverlay').classList.add('show');
 }
@@ -2231,6 +2276,8 @@ function openCalEdit(id){
   document.getElementById('cmTxt').value=e.tx;document.getElementById('cmTime').value=e.t;
   updateCmDayOptions();
   document.getElementById('cmDay').value=e.day;document.getElementById('cmType').value=e.cl;
+  document.getElementById('cmPriority').value=e.priority||'';
+  document.getElementById('cmDeadline').value=e.deadline||'';
   document.getElementById('cmDel').style.display='block';
   document.getElementById('calOverlay').classList.add('show');
 }
@@ -2241,6 +2288,8 @@ function openCalEditM(dk,id){
   document.getElementById('cmTxt').value=e.tx;document.getElementById('cmTime').value=e.t;
   updateCmDayOptions();
   document.getElementById('cmDay').value=0;document.getElementById('cmType').value=e.cl||'ev-custom';
+  document.getElementById('cmPriority').value=e.priority||'';
+  document.getElementById('cmDeadline').value=e.deadline||dk;
   document.getElementById('cmDel').style.display='block';
   document.getElementById('cmDel').onclick=()=>{if(mevs[dk])mevs[dk]=mevs[dk].filter(x=>x.id!==id);saveCalLS();closeCalModal();renderWeek();renderMonth();};
   document.getElementById('calOverlay').classList.add('show');
@@ -2252,8 +2301,10 @@ function saveCalEv(){
   const t=document.getElementById('cmTime').value||'10:00';
   const day=parseInt(document.getElementById('cmDay').value);
   const cl=document.getElementById('cmType').value;
-  if(calEditId){const e=calEvs.find(x=>x.id===calEditId);if(e){e.tx=tx;e.t=t;e.day=day;e.cl=cl;}}
-  else{const dk=calEditDateKey||weekDayKey(curWeek,day);if(!mevs[dk])mevs[dk]=[];mevs[dk].push({id:nid++,t,tx,cl});}
+  const priority=document.getElementById('cmPriority').value||undefined;
+  const deadline=document.getElementById('cmDeadline').value||undefined;
+  if(calEditId){const e=calEvs.find(x=>x.id===calEditId);if(e){e.tx=tx;e.t=t;e.day=day;e.cl=cl;e.priority=priority;e.deadline=deadline;}}
+  else{const dk=calEditDateKey||weekDayKey(curWeek,day);if(!mevs[dk])mevs[dk]=[];mevs[dk].push({id:nid++,t,tx,cl,priority,deadline});}
   saveCalLS();
   closeCalModal();renderWeek();renderMonth();
 }
