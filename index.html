@@ -224,9 +224,30 @@ body{background:var(--bg);color:var(--t1);font-family:'Onest',sans-serif;font-si
 .tl-row.tl-dragging{opacity:.4}
 .tl-day-group.drag-over{background:rgba(196,48,106,.06);border-radius:6px}
 .tl-day-group.drag-over .tl-day-hdr{background:rgba(196,48,106,.1)}
-@media(max-width:768px){.tasklist-block{margin:0 0 16px;border-radius:0;border-left:none;border-right:none}
-  .tl-row{grid-template-columns:20px 34px 56px 1fr auto}
-  .tl-filters{display:none}}
+@media(max-width:768px){
+  /* ── TASK LIST BLOCK (неделя и месяц) ── */
+  .tasklist-block{margin:0 0 16px;border-radius:0;border-left:none;border-right:none}
+  /* Заголовок: фильтры переносятся на вторую строку */
+  .tasklist-head{flex-wrap:wrap;gap:8px;padding:10px 12px}
+  .tasklist-title{font-size:10px}
+  .tl-filters{display:flex;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;gap:4px}
+  .tl-filters::-webkit-scrollbar{display:none}
+  .tl-filter-chip{font-size:9px;padding:3px 9px;white-space:nowrap;flex-shrink:0}
+  .tl-add-btn{min-height:36px;padding:0 10px}
+  /* Строка задачи: скрываем тип, показываем важное */
+  .tl-row{
+    grid-template-columns:22px 34px 1fr auto auto;
+    gap:6px;padding:8px 12px;font-size:11px
+  }
+  .tl-type{display:none}
+  .tl-dl{font-size:8.5px}
+  .tl-day-hdr{padding:8px 12px}
+  .tl-day-name{font-size:9.5px}
+  /* Day group drag targets bigger on touch */
+  .tl-day-group{min-height:44px}
+  /* Бейдж активных задач на ячейке дня (неделя) */
+  .dcol-badge{font-size:7px;min-width:13px;height:13px;padding:0 3px}
+}
 
 /* MONTH */
 #screen-month{display:none;flex:1;overflow:hidden;flex-direction:row}
@@ -805,6 +826,10 @@ select.mi{-webkit-appearance:none;cursor:pointer}
   .cal-ev{padding:5px 8px;gap:5px}
   #screen-week .stats-block{margin:0 14px 10px}
   #screen-week .notes-block{margin:0 14px 14px}
+  /* Список задач недели — на весь экран под гридом дней */
+  #screen-week .tasklist-block{margin:0;border-radius:0;border-left:none;border-right:none;border-top:1px solid var(--b1)}
+  /* Заголовок недели с счётчиком задач — уменьшаем */
+  #weekHeading{font-size:12px !important}
 
   /* ── MONTH ── */
   #screen-month,#screen-month.active{flex-direction:column;overflow-y:auto}
@@ -813,13 +838,18 @@ select.mi{-webkit-appearance:none;cursor:pointer}
   .mday-n{font-size:10px}
   .cal-grid{gap:2px;margin-bottom:0}
   .month-right-title{margin-bottom:10px;font-size:12px}
+  /* Список задач месяца — без боковых отступов, встраивается в month-left */
+  .month-left .tasklist-block{margin:12px -12px 0;border-radius:0;border-left:none;border-right:none}
 
-  /* ── FOCUS ── */
+  /* ── ЦЕЛИ И ФОКУС (объединённый экран) ── */
   #screen-focus{padding:12px}
-  .fbc-header{flex-wrap:wrap;gap:8px}
-
-  /* ── GOALS ── */
   .goals-grid{grid-template-columns:1fr}
+  .fbc-header{flex-wrap:wrap;gap:8px}
+  /* Разделитель между блоками Цели и Фокус */
+  .focus-screen-toolbar{padding-top:4px;margin-top:20px !important}
+  /* Личные цели — компактнее */
+  .pgs-header{gap:8px}
+  .personal-goals-section{margin-top:16px}
 
   /* ── CLIENTS ── */
   #screen-clients{padding:12px}
