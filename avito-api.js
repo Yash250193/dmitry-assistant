@@ -10,21 +10,20 @@
  * Прокси слушает http://localhost:8080 и пробрасывает запросы на api.avito.ru.
  */
 
-// На localhost используем /api/* того же сервера (server.js) — CORS невозможен.
-// На продакшне запросы идут напрямую на api.avito.ru.
-const _AVITO_BASE = (() => {
-  try {
-    const h = window.location.hostname;
-    if (h === 'localhost' || h === '127.0.0.1') {
-      return window.location.origin + '/api'; // → http://localhost:3000/api
-    }
-  } catch (_) {}
-  return 'https://api.avito.ru';
+// CORS: Авито API не поддерживает прямые запросы из браузера.
+// • localhost → /api/* локального server.js (node proxy.js).
+// • прод → Supabase Edge Function avito-proxy (серверный прокси, обходит CORS).
+const _SB_PROXY = 'https://rwpmjaqghekeyghdnkch.supabase.co/functions/v1/avito-proxy';
+const _SB_ANON  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ3cG1qYXFnaGVrZXlnaGRua2NoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyMTc4NjQsImV4cCI6MjA5Njc5Mzg2NH0.ktn9D3Ey--dURTRM-dfKsRriEtDx_5xKapQwi-fz2_U';
+const _IS_LOCAL = (() => {
+  try { const h = window.location.hostname; return h === 'localhost' || h === '127.0.0.1'; } catch (_) { return false; }
 })();
+const _AVITO_BASE = _IS_LOCAL ? (window.location.origin + '/api') : _SB_PROXY;
 
 class AvitoAPI {
   constructor() {
     this.base     = _AVITO_BASE;
+    this.proxy    = !_IS_LOCAL;   // на проде идём через Supabase-прокси
     this.TOKEN_KEY = 'avito_token_v1';
     this.CREDS_KEY = 'avito_creds_v1';
   }
@@ -71,9 +70,11 @@ class AvitoAPI {
   async _fetchNewToken(clientId, clientSecret) {
     let res;
     try {
+      const tokenHeaders = { 'Content-Type': 'application/x-www-form-urlencoded' };
+      if (this.proxy) tokenHeaders['apikey'] = _SB_ANON;
       res = await fetch(`${this.base}/token`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        headers: tokenHeaders,
         body: `grant_type=client_credentials&client_id=${encodeURIComponent(clientId)}&client_secret=${encodeURIComponent(clientSecret)}`,
       });
     } catch (e) {
@@ -94,6 +95,12 @@ class AvitoAPI {
     }
 
     const data = await res.json();
+    // Avito может вернуть 200 с телом-ошибкой при неверных ключах — обрабатываем явно
+    if (!data || !data.access_token) {
+      throw new Error(data && (data.error_description || data.error)
+        ? `${data.error_description || data.error}. Проверьте client_id и client_secret.`
+        : 'Не удалось получить токен. Проверьте client_id и client_secret.');
+    }
     const record = {
       tok: data.access_token,
       exp: Date.now() + (data.expires_in - 300) * 1000,  // -5 мин запас
@@ -118,13 +125,16 @@ class AvitoAPI {
   async _req(method, path, body = null, tokenOverride = null, _retried = false) {
     const token = tokenOverride || await this._getToken();
 
-    const opts = {
-      method,
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    };
+    const headers = { 'Content-Type': 'application/json' };
+    if (this.proxy) {
+      // Через Supabase-прокси: токен Avito шлём в x-avito-authorization,
+      // чтобы шлюз Supabase не перехватывал Authorization.
+      headers['apikey'] = _SB_ANON;
+      headers['x-avito-authorization'] = `Bearer ${token}`;
+    } else {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    const opts = { method, headers };
     if (body !== null) opts.body = JSON.stringify(body);
 
     let res;
@@ -134,7 +144,7 @@ class AvitoAPI {
       throw new Error(`Нет доступа к серверу. Проверьте интернет или используйте прокси. (${e.message})`);
     }
 
-    if (res.status === 401 && !_retried) {
+    if ((res.status === 401 || res.status === 403) && !_retried && !tokenOverride) {
       try { localStorage.removeItem(this.TOKEN_KEY); } catch (_) {}
       return this._req(method, path, body, null, true);
     }
