@@ -1469,6 +1469,20 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
       </div>
       <textarea class="notes-ta" id="monthNotesTA" placeholder="Итоги, планы, размышления по месяцу..." oninput="saveMonthNote(this.value)"></textarea>
     </div>
+    <div class="tasklist-block">
+      <div class="tasklist-head">
+        <div class="tasklist-title" id="monthTaskListTitle">Список задач месяца</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+          <div class="tl-filters">
+            <button class="tl-filter-chip mtl active" onclick="setMtlFilter('all',this)">Все</button>
+            <button class="tl-filter-chip mtl" onclick="setMtlFilter('active',this)">Активные</button>
+            <button class="tl-filter-chip mtl" onclick="setMtlFilter('done',this)">Выполнены</button>
+          </div>
+          <button class="add-btn" style="font-size:10px;padding:5px 12px" onclick="openCalAdd(null,null)">+ Добавить задачу</button>
+        </div>
+      </div>
+      <div id="monthTaskList"></div>
+    </div>
   </div>
   <div class="day-pop-backdrop" id="monthPopBackdrop" onclick="closeMonthPanel()"></div>
   <div class="month-right day-pop" id="monthRight">
@@ -2326,6 +2340,94 @@ function renderWeekTaskList(){
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// MONTH TASK LIST
+// ═══════════════════════════════════════════════════════════════════
+let mtlFilter='all';
+let mtlDragId=null,mtlDragSrcKey=null;
+
+function setMtlFilter(f,btn){
+  mtlFilter=f;
+  document.querySelectorAll('.tl-filter-chip.mtl').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  renderMonthTaskList();
+}
+
+function mtlDragStart(e,id,srcKey){
+  mtlDragId=id;mtlDragSrcKey=srcKey;
+  e.dataTransfer.effectAllowed='move';
+  e.currentTarget.classList.add('tl-dragging');
+}
+function mtlDragEnd(e){
+  e.currentTarget.classList.remove('tl-dragging');
+  document.querySelectorAll('.tl-drag-over').forEach(el=>el.classList.remove('tl-drag-over'));
+}
+function mtlDragOver(e){
+  e.preventDefault();e.dataTransfer.dropEffect='move';
+  document.querySelectorAll('.tl-drag-over').forEach(el=>el.classList.remove('tl-drag-over'));
+  e.currentTarget.classList.add('tl-drag-over');
+}
+function mtlDragLeave(e){e.currentTarget.classList.remove('tl-drag-over');}
+function mtlDrop(e,tgtKey){
+  e.preventDefault();e.currentTarget.classList.remove('tl-drag-over');
+  if(!mtlDragId||!mtlDragSrcKey||mtlDragSrcKey===tgtKey)return;
+  const src=mevs[mtlDragSrcKey]||[];
+  const idx=src.findIndex(x=>x.id===mtlDragId);if(idx<0)return;
+  const [ev]=src.splice(idx,1);
+  if(!mevs[tgtKey])mevs[tgtKey]=[];
+  mevs[tgtKey].push(ev);
+  saveCalLS();renderMonth();
+  mtlDragId=null;mtlDragSrcKey=null;
+}
+
+function renderMonthTaskList(){
+  const el=document.getElementById('monthTaskList');if(!el)return;
+  const y=curMonth.getFullYear(),m=curMonth.getMonth();
+  const dim=new Date(y,m+1,0).getDate();
+  const todayKey=dateKeyFromDate(new Date());
+  // Compute total/done for heading
+  let mTotal=0,mDone=0;
+  for(let d=1;d<=dim;d++){const evs=getDayEvs(y,m,d,true).filter(e=>!e._ghost);mTotal+=evs.length;mDone+=evs.filter(e=>e.done).length;}
+  const titleEl=document.getElementById('monthTaskListTitle');
+  if(titleEl)titleEl.innerHTML='Список задач месяца'+(mTotal?` <span style="font-size:9px;font-weight:400;opacity:.6;font-family:'Onest',sans-serif"> · ${mDone}/${mTotal}</span>`:'');
+  let html='';
+  for(let d=1;d<=dim;d++){
+    const dk=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const allEvs=getDayEvs(y,m,d,true).filter(e=>!e._ghost);
+    if(!allEvs.length)continue; // skip empty days
+    const evs=mtlFilter==='active'?allEvs.filter(e=>!e.done):mtlFilter==='done'?allEvs.filter(e=>e.done):allEvs;
+    if(!evs.length&&mtlFilter!=='all')continue; // skip days with no matching filter
+    const doneCnt=allEvs.filter(e=>e.done).length;
+    const isToday=dk===todayKey;
+    const dayNum=(new Date(y,m,d).getDay()+6)%7;
+    const dayShort=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'][dayNum];
+    html+=`<div class="tl-day-group" ondragover="mtlDragOver(event)" ondragleave="mtlDragLeave(event)" ondrop="mtlDrop(event,'${dk}')">
+      <div class="tl-day-hdr${isToday?' tl-today':''}">
+        <span class="tl-day-name">${dayShort} · ${d} ${MONTHS[m]}</span>
+        <span class="tl-day-count">${doneCnt}/${allEvs.length}</span>
+        <button class="tl-add-btn" onclick="openCalAdd(null,'${dk}')">+ задачу</button>
+      </div>
+      ${evs.length?evs.map(e=>{
+        const isCE=e.day!==undefined;const isCT=e._ctask;
+        const isDraggable=!isCE&&!isCT;
+        const chkFn=isCE?`toggleCalEvDone(${e.id})`:isCT?`toggleClientTaskFromCal(${e._cid},${e.id})`:`toggleCalEvDoneM('${dk}',${e.id})`;
+        const editFn=isCE?`openCalEdit(${e.id})`:isCT?`openClientDetail(${e._cid})`:`openCalEditM('${dk}',${e.id})`;
+        const typeLabel=TYPE_LABELS[e.cl]||'Другое';
+        const dlTxt=e.deadline?e.deadline.slice(5).replace('-','.'):'';
+        return`<div class="tl-row${e.done?' tl-done':''}" ${isDraggable?`draggable="true" ondragstart="mtlDragStart(event,${e.id},'${dk}')" ondragend="mtlDragEnd(event)"`:''}>
+          <span class="tl-chk" onclick="${chkFn}" title="${e.done?'Снять':'Выполнено'}">${e.done?'✓':''}</span>
+          <span class="tl-time">${e.t}</span>
+          <span class="tl-type ${e.cl}" style="font-size:8.5px;font-weight:600;padding:2px 5px;border-radius:4px">${typeLabel}</span>
+          <span class="tl-name" onclick="${editFn}">${e.tx}</span>
+          <span class="tl-prio">${e.priority?priorityBadge(e):''}</span>
+          ${dlTxt?`<span class="tl-dl">до ${dlTxt}</span>`:'<span class="tl-dl"></span>'}
+        </div>`;
+      }).join(''):`<div class="tl-empty">нет ${mtlFilter==='done'?'выполненных':'активных'}</div>`}
+    </div>`;
+  }
+  el.innerHTML=html||(mTotal===0?`<div class="tl-empty" style="padding:20px 16px;text-align:center">Задач в этом месяце нет · <span style="cursor:pointer;color:var(--blue)" onclick="openCalAdd(null,null)">добавить</span></div>`:`<div class="tl-empty" style="padding:20px 16px;text-align:center">Нет задач по фильтру «${mtlFilter==='done'?'Выполнены':'Активные'}»</div>`);
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // MONTH CALENDAR
 // ═══════════════════════════════════════════════════════════════════
 function chMonth(d){curMonth=new Date(curMonth.getFullYear(),curMonth.getMonth()+d,1);selDay=null;renderMonth();}
@@ -2374,6 +2476,7 @@ function renderMonth(){
   });
   renderMRight();
   renderMonthStats();
+  renderMonthTaskList();
 }
 function openMonthPanel(){const p=document.getElementById('monthRight'),b=document.getElementById('monthPopBackdrop');if(p)p.classList.add('open');if(b)b.classList.add('show');}
 function closeMonthPanel(){const p=document.getElementById('monthRight'),b=document.getElementById('monthPopBackdrop');if(p)p.classList.remove('open');if(b)b.classList.remove('show');}
@@ -2492,7 +2595,7 @@ function toggleCalEvDoneM(key,id){
   const e=(mevs[key]||[]).find(x=>x.id===id);if(!e)return;
   e.done=!e.done;
   saveCalLS();
-  renderMRight();renderMonthStats();
+  renderMRight();renderMonthStats();renderMonthTaskList();
 }
 function toggleClientTaskFromCal(cid,tid){
   const cl=clients.find(x=>x.id===cid);if(!cl)return;
