@@ -184,6 +184,35 @@ body{background:var(--bg);color:var(--t1);font-family:'Onest',sans-serif;font-si
 .prio-badge{font-weight:800;font-size:9px;letter-spacing:.5px;flex-shrink:0;line-height:1;margin-left:auto;padding-top:1px}
 .mrev .prio-badge{font-size:11px;font-weight:800;margin-left:4px;flex-shrink:0}
 .ev-client{background:#2E0A18;color:#f9a8d4}
+.ev-ghost{opacity:.35;pointer-events:none;border:1px dashed currentColor}
+/* ── TASK LIST BLOCK ── */
+.tasklist-block{margin:0 20px 20px;background:var(--s1);border:1px solid var(--b1);border-radius:var(--r2);overflow:hidden}
+.tasklist-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--b1);background:var(--s2)}
+.tasklist-title{font-family:'Unbounded',sans-serif;font-size:11px;font-weight:600;color:var(--t2)}
+.tl-day-group{border-bottom:1px solid var(--b1)}
+.tl-day-group:last-child{border-bottom:none}
+.tl-day-hdr{display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--s2);border-bottom:1px solid var(--b1)}
+.tl-day-name{font-size:10px;font-weight:700;color:var(--t1);letter-spacing:.04em;flex:1}
+.tl-day-count{font-size:9px;color:var(--t3);background:var(--s3);border-radius:10px;padding:1px 7px}
+.tl-day-hdr.tl-today .tl-day-name{color:var(--blue)}
+.tl-add-btn{background:none;border:none;font-size:10px;color:var(--blue);cursor:pointer;font-family:'Onest',sans-serif;padding:2px 6px;border-radius:4px;transition:background .15s}
+.tl-add-btn:hover{background:var(--blue3)}
+.tl-row{display:grid;grid-template-columns:20px 38px 64px 1fr auto auto;align-items:center;gap:8px;padding:7px 14px;border-bottom:1px solid rgba(var(--b1-rgb,226,222,240),.5);transition:background .12s;font-size:11px}
+.tl-row:last-child{border-bottom:none}
+.tl-row:hover{background:var(--s2)}
+.tl-row.tl-done .tl-name{text-decoration:line-through;opacity:.45}
+.tl-row.tl-ghost{opacity:.4}
+.tl-chk{width:18px;height:18px;border:1.5px solid var(--b3);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:9px;color:var(--t3);flex-shrink:0;transition:all .15s}
+.tl-row.tl-done .tl-chk{background:var(--blue);border-color:var(--blue);color:#fff}
+.tl-time{font-size:9px;color:var(--t3);white-space:nowrap}
+.tl-type{font-size:8.5px;font-weight:600;padding:2px 6px;border-radius:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:64px}
+.tl-name{font-size:11px;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.tl-name:hover{color:var(--blue)}
+.tl-prio{flex-shrink:0}
+.tl-dl{font-size:9px;color:var(--t3);white-space:nowrap;flex-shrink:0}
+.tl-empty{padding:10px 14px;font-size:10px;color:var(--t3);font-style:italic}
+@media(max-width:768px){.tasklist-block{margin:0 0 16px;border-radius:0;border-left:none;border-right:none}
+  .tl-row{grid-template-columns:20px 34px 56px 1fr auto}}
 
 /* MONTH */
 #screen-month{display:none;flex:1;overflow:hidden;flex-direction:row}
@@ -1376,6 +1405,13 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
       </div>
       <textarea class="notes-ta" id="weekNotesTA" placeholder="Свободные мысли, цели, идеи на эту неделю..." oninput="saveWeekNote(this.value)"></textarea>
     </div>
+    <div class="tasklist-block">
+      <div class="tasklist-head">
+        <div class="tasklist-title">Список задач недели</div>
+        <button class="add-btn" style="font-size:10px;padding:5px 12px" onclick="openCalAdd(null,null)">+ Добавить задачу</button>
+      </div>
+      <div id="weekTaskList"></div>
+    </div>
   </div>
   <div class="day-pop-backdrop" id="weekPopBackdrop" onclick="closeWeekPanel()"></div>
   <div class="week-right day-pop" id="weekRight">
@@ -1646,12 +1682,7 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
     <div class="mf"><div class="ml">Название</div><input class="mi" id="cmTxt" type="text" placeholder="Название задачи"></div>
     <div class="mi-row">
       <div class="mf"><div class="ml">Время</div><input class="mi" id="cmTime" type="time" value="10:00"></div>
-      <div class="mf"><div class="ml">День</div>
-        <select class="mi" id="cmDay">
-          <option value="0">Пн</option><option value="1">Вт</option><option value="2">Ср</option>
-          <option value="3">Чт</option><option value="4">Пт</option><option value="5">Сб</option><option value="6">Вс</option>
-        </select>
-      </div>
+      <div class="mf"><div class="ml">Дата</div><input class="mi" id="cmDate" type="date"></div>
     </div>
     <div class="mf"><div class="ml">Тип</div>
       <select class="mi" id="cmType">
@@ -1965,14 +1996,14 @@ function getMonday(d){const dt=new Date(d);dt.setHours(0,0,0,0);const dow=(dt.ge
 function weekKey(mon){return mon.getFullYear()+'-'+String(mon.getMonth()+1).padStart(2,'0')+'-'+String(mon.getDate()).padStart(2,'0');}
 function weekDayKey(mon,di){const d=new Date(mon);d.setDate(d.getDate()+di);return weekKey(d);}
 function weekLabel(mon){const d2=new Date(mon);d2.setDate(d2.getDate()+6);const mo1=MONTHS[mon.getMonth()],mo2=MONTHS[d2.getMonth()];if(mo1===mo2)return mon.getDate()+'–'+d2.getDate()+' '+mo1;return mon.getDate()+' '+mo1.slice(0,3)+'–'+d2.getDate()+' '+mo2.slice(0,3);}
-function updateCmDayOptions(){const sel=document.getElementById('cmDay');if(!sel)return;const cur=parseInt(sel.value)||0;sel.innerHTML=DAYS.map((nm,di)=>{const dd=new Date(curWeek);dd.setDate(dd.getDate()+di);return`<option value="${di}">${nm} ${dd.getDate()}</option>`;}).join('');sel.value=cur;}
+const TYPE_LABELS={'ev-avito':'Авито','ev-ii':'ИИ','ev-blog':'Блог','ev-land':'Участок','ev-ritual':'Ритуал','ev-intel':'Насмотр','ev-rest':'Отдых','ev-eve':'Личное','ev-custom':'Другое','ev-client':'Клиент'};
 function chWeek(dir){curWeek=getMonday(new Date(curWeek));curWeek.setDate(curWeek.getDate()+dir*7);renderWeek();}
 function loadWeekNote(){const ta=document.getElementById('weekNotesTA');if(!ta)return;ta.value=localStorage.getItem('weekNote_'+weekKey(curWeek))||'';}
 function toggleMEvDone(key,id){const e=(mevs[key]||[]).find(x=>x.id===id);if(!e)return;e.done=!e.done;saveCalLS();renderWeek();if(document.getElementById('screen-month').classList.contains('active'))renderMonth();}
 let curWeek=getMonday(new Date());
 
 // Modal state
-let calEditId=null,calEditDateKey=null;
+let calEditId=null,calEditDateKey=null,calEditMEvId=null;
 let focusEditId=null;
 let taskEditId=null,taskFocusId=null;
 let goalEditId=null,goalEditType=null;
@@ -2141,11 +2172,11 @@ function renderWeek(){
     const stBadge=st?`<span class="dcol-status" style="background:${DAY_STATUS[st].color}">${DAY_STATUS[st].label}</span>`:'';
     const col=document.createElement('div');col.className='day-col'+(selWeekDay===dk?' sel-day':'');
     col.innerHTML=`<div class="day-col-head${isToday?' dcol-today':''}"${stStyle} onclick="selectWeekDay('${dk}')"><div class="dcol-name">${DAYS[di]}${stBadge}</div><div class="dcol-date">${d}</div></div>
-      <div class="day-col-body">${de.map(e=>{const isCE=e.day!==undefined;const isCT=e._ctask;const ef=isCE?`openCalEdit(${e.id})`:isCT?`openClientDetail(${e._cid})`:`openCalEditM('${dk}',${e.id})`;const tf=isCE?`toggleCalEvDone(${e.id})`:isCT?`toggleClientTaskFromCal(${e._cid},${e.id})`:`toggleMEvDone('${dk}',${e.id})`;return`<div class="cal-ev ${e.cl}${e.done?' ev-done':''}">
+      <div class="day-col-body">${de.map(e=>{const isCE=e.day!==undefined;const isCT=e._ctask;const isGhost=!!e._ghost;const ef=isGhost?'':(isCE?`openCalEdit(${e.id})`:isCT?`openClientDetail(${e._cid})`:`openCalEditM('${dk}',${e.id})`);const tf=isGhost?'':(isCE?`toggleCalEvDone(${e.id})`:isCT?`toggleClientTaskFromCal(${e._cid},${e.id})`:`toggleMEvDone('${dk}',${e.id})`);return`<div class="cal-ev ${e.cl}${e.done?' ev-done':''}${isGhost?' ev-ghost':''}" title="${isGhost?'Дедлайн задачи из '+e._ghostFrom:''}">
         <span class="ev-time-small">${e.t}</span>
-        <span class="ev-tx" onclick="${ef}">${e.tx}</span>
+        <span class="ev-tx"${ef?` onclick="${ef}"`:''}>${e.tx}</span>
         ${priorityBadge(e)}
-        <span class="ev-chk" onclick="event.stopPropagation();${tf}" title="${e.done?'Снять отметку':'Отметить выполненным'}">${e.done?'✓':'·'}</span>
+        ${isGhost?'':`<span class="ev-chk" onclick="event.stopPropagation();${tf}" title="${e.done?'Снять отметку':'Отметить выполненным'}">${e.done?'✓':'·'}</span>`}
       </div>`;}).join('')}
       <div class="add-ev-row" onclick="openCalAdd(null,'${dk}')">＋ добавить</div></div>`;
     g.appendChild(col);
@@ -2153,6 +2184,7 @@ function renderWeek(){
   loadWeekNote();
   renderWeekStats();
   renderWeekRight();
+  renderWeekTaskList();
 }
 function dateKeyFromDate(dt){return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');}
 function selectWeekDay(dk){selWeekDay=dk;renderWeek();openWeekPanel();}
@@ -2163,7 +2195,7 @@ function renderWeekRight(){
   if(!t||!l)return;
   if(!selWeekDay){t.textContent='Выберите день';l.innerHTML='<div class="no-evs">Нажмите на день</div>';return;}
   const [yy,mm,dd]=selWeekDay.split('-').map(Number);
-  const de=getDayEvs(yy,mm-1,dd);
+  const de=getDayEvs(yy,mm-1,dd,true).filter(e=>!e._ghost);
   const doneCnt=de.filter(e=>e.done).length;
   const st=dayStatuses[selWeekDay];
   t.innerHTML=`${dd} ${MONTHS[mm-1]} · ${doneCnt}/${de.length} выполнено`;
@@ -2188,17 +2220,65 @@ function toggleMEvDoneWeek(key,id){
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// WEEK TASK LIST
+// ═══════════════════════════════════════════════════════════════════
+function renderWeekTaskList(){
+  const el=document.getElementById('weekTaskList');if(!el)return;
+  const todayKey=dateKeyFromDate(new Date());
+  let html='';
+  DAYS.forEach((dayName,di)=>{
+    const dayDate=new Date(curWeek);dayDate.setDate(dayDate.getDate()+di);
+    const dk=weekDayKey(curWeek,di);
+    // skipGhosts=true чтобы в списке каждая задача отображалась один раз — в своём дне
+    const evs=getDayEvs(dayDate.getFullYear(),dayDate.getMonth(),dayDate.getDate(),true);
+    const doneCnt=evs.filter(e=>e.done).length;
+    const isToday=dk===todayKey;
+    html+=`<div class="tl-day-group">
+      <div class="tl-day-hdr${isToday?' tl-today':''}">
+        <span class="tl-day-name">${dayName} · ${dayDate.getDate()} ${MONTHS[dayDate.getMonth()]}</span>
+        <span class="tl-day-count">${doneCnt}/${evs.length}</span>
+        <button class="tl-add-btn" onclick="openCalAdd(null,'${dk}')">+ задачу</button>
+      </div>
+      ${evs.length?evs.map(e=>{
+        const isCE=e.day!==undefined;const isCT=e._ctask;
+        const chkFn=isCE?`toggleCalEvDone(${e.id})`:isCT?`toggleClientTaskFromCal(${e._cid},${e.id})`:`toggleMEvDone('${dk}',${e.id})`;
+        const editFn=isCE?`openCalEdit(${e.id})`:isCT?`openClientDetail(${e._cid})`:`openCalEditM('${dk}',${e.id})`;
+        const typeLabel=TYPE_LABELS[e.cl]||'Другое';
+        const dlTxt=e.deadline?e.deadline.slice(5).replace('-','.'):'';
+        return`<div class="tl-row${e.done?' tl-done':''}">
+          <span class="tl-chk" onclick="${chkFn}" title="${e.done?'Снять':'Выполнено'}">${e.done?'✓':''}</span>
+          <span class="tl-time">${e.t}</span>
+          <span class="tl-type ${e.cl}" style="font-size:8.5px;font-weight:600;padding:2px 5px;border-radius:4px">${typeLabel}</span>
+          <span class="tl-name" onclick="${editFn}">${e.tx}</span>
+          <span class="tl-prio">${e.priority?priorityBadge(e):''}</span>
+          ${dlTxt?`<span class="tl-dl">до ${dlTxt}</span>`:'<span class="tl-dl"></span>'}
+        </div>`;
+      }).join(''):`<div class="tl-empty">нет задач · <span style="cursor:pointer;color:var(--blue)" onclick="openCalAdd(null,'${dk}')">добавить</span></div>`}
+    </div>`;
+  });
+  el.innerHTML=html;
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // MONTH CALENDAR
 // ═══════════════════════════════════════════════════════════════════
 function chMonth(d){curMonth=new Date(curMonth.getFullYear(),curMonth.getMonth()+d,1);selDay=null;renderMonth();}
-function getDayEvs(y,m,d){
+function getDayEvs(y,m,d,skipGhosts){
   const key=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
   const custom=mevs[key]||[];
   const ctasks=[];
   clients.forEach(cl=>{(cl.tasks||[]).forEach(t=>{if(t.deadline===key)ctasks.push({id:t.id,t:'00:00',tx:cl.name+': '+t.text,cl:'ev-client',done:t.done,priority:t.priority,deadline:t.deadline,_cid:cl.id,_ctask:true});});});
   let base=[];
   if(y===2026&&m===4&&d>=11&&d<=17)base=calEvs.filter(e=>e.day===d-11);
-  return[...base,...custom,...ctasks].sort((a,b)=>a.t.localeCompare(b.t));
+  // Призрачные события: задачи других дней с дедлайном в этот день
+  const ghosts=[];
+  if(!skipGhosts){
+    Object.entries(mevs).forEach(([dk,evs])=>{
+      if(dk===key)return;
+      (evs||[]).forEach(ev=>{if(ev.deadline===key&&!ev.done)ghosts.push({...ev,_ghost:true,_ghostFrom:dk});});
+    });
+  }
+  return[...base,...custom,...ctasks,...ghosts].sort((a,b)=>a.t.localeCompare(b.t));
 }
 function renderMonth(){
   const y=curMonth.getFullYear(),m=curMonth.getMonth();
@@ -2257,39 +2337,40 @@ function renderMRight(){
 // CALENDAR MODAL
 // ═══════════════════════════════════════════════════════════════════
 function openCalAdd(day,dateKey){
-  calEditId=null;calEditDateKey=dateKey;
+  calEditId=null;calEditDateKey=null;calEditMEvId=null;
   document.getElementById('calModalTitle').textContent='Добавить задачу';
   document.getElementById('cmTxt').value='';document.getElementById('cmTime').value='10:00';
-  updateCmDayOptions();
-  if(dateKey){const dd=new Date(dateKey+'T00:00:00');const di=Math.round((dd-curWeek)/86400000);document.getElementById('cmDay').value=di>=0&&di<7?di:0;}
-  else document.getElementById('cmDay').value=day!==null?day:0;
+  document.getElementById('cmDate').value=dateKey||dateKeyFromDate(new Date());
   document.getElementById('cmType').value='ev-custom';
   document.getElementById('cmPriority').value='';
-  document.getElementById('cmDeadline').value=dateKey||'';
+  document.getElementById('cmDeadline').value='';
   document.getElementById('cmDel').style.display='none';
+  document.getElementById('cmDel').onclick=delCalEv;
   document.getElementById('calOverlay').classList.add('show');
 }
 function openCalEdit(id){
   const e=calEvs.find(x=>x.id===id);if(!e)return;
-  calEditId=id;calEditDateKey=null;
+  calEditId=id;calEditDateKey=null;calEditMEvId=null;
   document.getElementById('calModalTitle').textContent='Редактировать задачу';
   document.getElementById('cmTxt').value=e.tx;document.getElementById('cmTime').value=e.t;
-  updateCmDayOptions();
-  document.getElementById('cmDay').value=e.day;document.getElementById('cmType').value=e.cl;
+  const evDate=new Date(curWeek);evDate.setDate(evDate.getDate()+e.day);
+  document.getElementById('cmDate').value=dateKeyFromDate(evDate);
+  document.getElementById('cmType').value=e.cl;
   document.getElementById('cmPriority').value=e.priority||'';
   document.getElementById('cmDeadline').value=e.deadline||'';
   document.getElementById('cmDel').style.display='block';
+  document.getElementById('cmDel').onclick=delCalEv;
   document.getElementById('calOverlay').classList.add('show');
 }
 function openCalEditM(dk,id){
   const e=(mevs[dk]||[]).find(x=>x.id===id);if(!e)return;
-  calEditId=null;calEditDateKey=dk;
+  calEditId=null;calEditDateKey=dk;calEditMEvId=id;
   document.getElementById('calModalTitle').textContent='Редактировать задачу';
   document.getElementById('cmTxt').value=e.tx;document.getElementById('cmTime').value=e.t;
-  updateCmDayOptions();
-  document.getElementById('cmDay').value=0;document.getElementById('cmType').value=e.cl||'ev-custom';
+  document.getElementById('cmDate').value=dk;
+  document.getElementById('cmType').value=e.cl||'ev-custom';
   document.getElementById('cmPriority').value=e.priority||'';
-  document.getElementById('cmDeadline').value=e.deadline||dk;
+  document.getElementById('cmDeadline').value=e.deadline||'';
   document.getElementById('cmDel').style.display='block';
   document.getElementById('cmDel').onclick=()=>{if(mevs[dk])mevs[dk]=mevs[dk].filter(x=>x.id!==id);saveCalLS();closeCalModal();renderWeek();renderMonth();};
   document.getElementById('calOverlay').classList.add('show');
@@ -2299,12 +2380,33 @@ function delCalEv(){calEvs=calEvs.filter(e=>e.id!==calEditId);saveCalLS();closeC
 function saveCalEv(){
   const tx=document.getElementById('cmTxt').value.trim();if(!tx)return;
   const t=document.getElementById('cmTime').value||'10:00';
-  const day=parseInt(document.getElementById('cmDay').value);
   const cl=document.getElementById('cmType').value;
   const priority=document.getElementById('cmPriority').value||undefined;
   const deadline=document.getElementById('cmDeadline').value||undefined;
-  if(calEditId){const e=calEvs.find(x=>x.id===calEditId);if(e){e.tx=tx;e.t=t;e.day=day;e.cl=cl;e.priority=priority;e.deadline=deadline;}}
-  else{const dk=calEditDateKey||weekDayKey(curWeek,day);if(!mevs[dk])mevs[dk]=[];mevs[dk].push({id:nid++,t,tx,cl,priority,deadline});}
+  const selectedDate=document.getElementById('cmDate').value||dateKeyFromDate(new Date());
+  if(calEditId){
+    // Редактируем calEvs событие
+    const e=calEvs.find(x=>x.id===calEditId);
+    if(e){
+      e.tx=tx;e.t=t;e.cl=cl;e.priority=priority;e.deadline=deadline;
+      const evD=new Date(selectedDate+'T00:00:00');
+      const newDi=Math.round((evD-curWeek)/86400000);
+      if(newDi>=0&&newDi<7){e.day=newDi;}
+      else{calEvs=calEvs.filter(x=>x.id!==calEditId);if(!mevs[selectedDate])mevs[selectedDate]=[];mevs[selectedDate].push({id:nid++,t,tx,cl,priority,deadline,done:e.done||false});}
+    }
+  }else if(calEditDateKey&&calEditMEvId!==null){
+    // Редактируем mevs событие — может смениться дата
+    const oldArr=mevs[calEditDateKey]||[];
+    const oldEv=oldArr.find(x=>x.id===calEditMEvId);
+    const done=oldEv?!!oldEv.done:false;
+    mevs[calEditDateKey]=oldArr.filter(x=>x.id!==calEditMEvId);
+    if(!mevs[selectedDate])mevs[selectedDate]=[];
+    mevs[selectedDate].push({id:nid++,t,tx,cl,priority,deadline,done});
+  }else{
+    // Новое событие
+    if(!mevs[selectedDate])mevs[selectedDate]=[];
+    mevs[selectedDate].push({id:nid++,t,tx,cl,priority,deadline});
+  }
   saveCalLS();
   closeCalModal();renderWeek();renderMonth();
 }
