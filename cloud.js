@@ -14,7 +14,7 @@
   // Ключи localStorage, которые синхронизируем (данные приложения)
   const EXACT = ['clientsData','metricsData','personalGoalsData','calEvsData','mevsData',
                  'appNotes','monthNote','hLogs','hDefs','focusData','bytovkaTasks',
-                 'finEntries','finStatuses','theme','dayStatuses','chatHistory'];
+                 'finEntries','finStatuses','theme','dayStatuses'];
   const PREFIX = ['weekNote_'];
   function isSyncKey(k){ return EXACT.indexOf(k)>=0 || PREFIX.some(p=>k.indexOf(p)===0); }
 
