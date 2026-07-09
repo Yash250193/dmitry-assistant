@@ -211,8 +211,22 @@ body{background:var(--bg);color:var(--t1);font-family:'Onest',sans-serif;font-si
 .tl-prio{flex-shrink:0}
 .tl-dl{font-size:9px;color:var(--t3);white-space:nowrap;flex-shrink:0}
 .tl-empty{padding:10px 14px;font-size:10px;color:var(--t3);font-style:italic}
+/* Фильтры списка задач */
+.tl-filters{display:flex;gap:4px}
+.tl-filter-chip{background:var(--s3);border:1px solid var(--b2);border-radius:20px;padding:3px 10px;font-size:9.5px;font-family:'Onest',sans-serif;color:var(--t2);cursor:pointer;transition:all .15s;white-space:nowrap}
+.tl-filter-chip:hover{border-color:var(--blue);color:var(--blue)}
+.tl-filter-chip.active{background:var(--blue);border-color:var(--blue);color:#fff}
+/* Бейдж активных задач на заголовке дня */
+.dcol-badge{display:inline-flex;align-items:center;justify-content:center;background:var(--blue);color:#fff;border-radius:8px;font-size:7.5px;font-weight:700;min-width:14px;height:14px;padding:0 4px;margin-left:4px;vertical-align:middle;line-height:1}
+/* Drag-and-drop */
+.tl-row[draggable=true]{cursor:grab}
+.tl-row[draggable=true]:active{cursor:grabbing}
+.tl-row.tl-dragging{opacity:.4}
+.tl-day-group.drag-over{background:rgba(196,48,106,.06);border-radius:6px}
+.tl-day-group.drag-over .tl-day-hdr{background:rgba(196,48,106,.1)}
 @media(max-width:768px){.tasklist-block{margin:0 0 16px;border-radius:0;border-left:none;border-right:none}
-  .tl-row{grid-template-columns:20px 34px 56px 1fr auto}}
+  .tl-row{grid-template-columns:20px 34px 56px 1fr auto}
+  .tl-filters{display:none}}
 
 /* MONTH */
 #screen-month{display:none;flex:1;overflow:hidden;flex-direction:row}
@@ -1408,7 +1422,14 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
     <div class="tasklist-block">
       <div class="tasklist-head">
         <div class="tasklist-title">Список задач недели</div>
-        <button class="add-btn" style="font-size:10px;padding:5px 12px" onclick="openCalAdd(null,null)">+ Добавить задачу</button>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+          <div class="tl-filters">
+            <button class="tl-filter-chip active" onclick="setTlFilter('all',this)">Все</button>
+            <button class="tl-filter-chip" onclick="setTlFilter('active',this)">Активные</button>
+            <button class="tl-filter-chip" onclick="setTlFilter('done',this)">Выполнены</button>
+          </div>
+          <button class="add-btn" style="font-size:10px;padding:5px 12px" onclick="openCalAdd(null,null)">+ Добавить задачу</button>
+        </div>
       </div>
       <div id="weekTaskList"></div>
     </div>
@@ -2152,7 +2173,10 @@ function priorityBadge(e){
 // ═══════════════════════════════════════════════════════════════════
 function renderWeek(){
   const h=document.getElementById('weekHeading');
-  if(h)h.textContent='Неделя '+weekLabel(curWeek);
+  // Compute week-wide task counts for heading
+  let wTotal=0,wDone=0;
+  DAYS.forEach((_,di)=>{const dd=new Date(curWeek);dd.setDate(dd.getDate()+di);const evs=getDayEvs(dd.getFullYear(),dd.getMonth(),dd.getDate(),true).filter(e=>!e._ghost);wTotal+=evs.length;wDone+=evs.filter(e=>e.done).length;});
+  if(h)h.innerHTML='Неделя '+weekLabel(curWeek)+(wTotal?` <span style="font-size:9px;font-weight:400;opacity:.6;font-family:'Onest',sans-serif"> · ${wDone}/${wTotal} задач</span>`:'');
   const g=document.getElementById('weekGrid');g.innerHTML='';
   const todayMs=new Date(new Date().setHours(0,0,0,0)).getTime();
   // Выбранный день по умолчанию: сегодня (если в текущей неделе) иначе понедельник
@@ -2170,8 +2194,11 @@ function renderWeek(){
     const st=dayStatuses[dk];
     const stStyle=st?` style="border-left:4px solid ${DAY_STATUS[st].color}"`:'';
     const stBadge=st?`<span class="dcol-status" style="background:${DAY_STATUS[st].color}">${DAY_STATUS[st].label}</span>`:'';
+    // Pending (non-done, non-ghost) task count badge
+    const pendingCnt=de.filter(e=>!e.done&&!e._ghost).length;
+    const pendingBadge=pendingCnt?`<span class="dcol-badge">${pendingCnt}</span>`:'';
     const col=document.createElement('div');col.className='day-col'+(selWeekDay===dk?' sel-day':'');
-    col.innerHTML=`<div class="day-col-head${isToday?' dcol-today':''}"${stStyle} onclick="selectWeekDay('${dk}')"><div class="dcol-name">${DAYS[di]}${stBadge}</div><div class="dcol-date">${d}</div></div>
+    col.innerHTML=`<div class="day-col-head${isToday?' dcol-today':''}"${stStyle} onclick="selectWeekDay('${dk}')"><div class="dcol-name">${DAYS[di]}${stBadge}${pendingBadge}</div><div class="dcol-date">${d}</div></div>
       <div class="day-col-body">${de.map(e=>{const isCE=e.day!==undefined;const isCT=e._ctask;const isGhost=!!e._ghost;const ef=isGhost?'':(isCE?`openCalEdit(${e.id})`:isCT?`openClientDetail(${e._cid})`:`openCalEditM('${dk}',${e.id})`);const tf=isGhost?'':(isCE?`toggleCalEvDone(${e.id})`:isCT?`toggleClientTaskFromCal(${e._cid},${e.id})`:`toggleMEvDone('${dk}',${e.id})`);return`<div class="cal-ev ${e.cl}${e.done?' ev-done':''}${isGhost?' ev-ghost':''}" title="${isGhost?'Дедлайн задачи из '+e._ghostFrom:''}">
         <span class="ev-time-small">${e.t}</span>
         <span class="ev-tx"${ef?` onclick="${ef}"`:''}>${e.tx}</span>
@@ -2222,6 +2249,43 @@ function toggleMEvDoneWeek(key,id){
 // ═══════════════════════════════════════════════════════════════════
 // WEEK TASK LIST
 // ═══════════════════════════════════════════════════════════════════
+let tlFilter='all';
+let tlDragId=null,tlDragSrcKey=null;
+
+function setTlFilter(f,btn){
+  tlFilter=f;
+  document.querySelectorAll('.tl-filter-chip').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  renderWeekTaskList();
+}
+
+function tlDragStart(e,id,srcKey){
+  tlDragId=id;tlDragSrcKey=srcKey;
+  e.dataTransfer.effectAllowed='move';
+  e.currentTarget.classList.add('tl-dragging');
+}
+function tlDragEnd(e){
+  e.currentTarget.classList.remove('tl-dragging');
+  document.querySelectorAll('.tl-drag-over').forEach(el=>el.classList.remove('tl-drag-over'));
+}
+function tlDragOver(e,dk){
+  e.preventDefault();e.dataTransfer.dropEffect='move';
+  document.querySelectorAll('.tl-drag-over').forEach(el=>el.classList.remove('tl-drag-over'));
+  e.currentTarget.classList.add('tl-drag-over');
+}
+function tlDragLeave(e){e.currentTarget.classList.remove('tl-drag-over');}
+function tlDrop(e,tgtKey){
+  e.preventDefault();e.currentTarget.classList.remove('tl-drag-over');
+  if(!tlDragId||!tlDragSrcKey||tlDragSrcKey===tgtKey)return;
+  const src=mevs[tlDragSrcKey]||[];
+  const idx=src.findIndex(x=>x.id===tlDragId);if(idx<0)return;
+  const [ev]=src.splice(idx,1);
+  if(!mevs[tgtKey])mevs[tgtKey]=[];
+  mevs[tgtKey].push(ev);
+  saveCalLS();renderWeek();
+  tlDragId=null;tlDragSrcKey=null;
+}
+
 function renderWeekTaskList(){
   const el=document.getElementById('weekTaskList');if(!el)return;
   const todayKey=dateKeyFromDate(new Date());
@@ -2229,23 +2293,25 @@ function renderWeekTaskList(){
   DAYS.forEach((dayName,di)=>{
     const dayDate=new Date(curWeek);dayDate.setDate(dayDate.getDate()+di);
     const dk=weekDayKey(curWeek,di);
-    // skipGhosts=true чтобы в списке каждая задача отображалась один раз — в своём дне
-    const evs=getDayEvs(dayDate.getFullYear(),dayDate.getMonth(),dayDate.getDate(),true);
-    const doneCnt=evs.filter(e=>e.done).length;
+    // skipGhosts=true: each task shown once in its own day
+    const allEvs=getDayEvs(dayDate.getFullYear(),dayDate.getMonth(),dayDate.getDate(),true);
+    const evs=tlFilter==='active'?allEvs.filter(e=>!e.done):tlFilter==='done'?allEvs.filter(e=>e.done):allEvs;
+    const doneCnt=allEvs.filter(e=>e.done).length;
     const isToday=dk===todayKey;
-    html+=`<div class="tl-day-group">
+    html+=`<div class="tl-day-group" ondragover="tlDragOver(event,'${dk}')" ondragleave="tlDragLeave(event)" ondrop="tlDrop(event,'${dk}')">
       <div class="tl-day-hdr${isToday?' tl-today':''}">
         <span class="tl-day-name">${dayName} · ${dayDate.getDate()} ${MONTHS[dayDate.getMonth()]}</span>
-        <span class="tl-day-count">${doneCnt}/${evs.length}</span>
+        <span class="tl-day-count">${doneCnt}/${allEvs.length}</span>
         <button class="tl-add-btn" onclick="openCalAdd(null,'${dk}')">+ задачу</button>
       </div>
       ${evs.length?evs.map(e=>{
         const isCE=e.day!==undefined;const isCT=e._ctask;
+        const isDraggable=!isCE&&!isCT; // only mevs tasks are draggable
         const chkFn=isCE?`toggleCalEvDone(${e.id})`:isCT?`toggleClientTaskFromCal(${e._cid},${e.id})`:`toggleMEvDone('${dk}',${e.id})`;
         const editFn=isCE?`openCalEdit(${e.id})`:isCT?`openClientDetail(${e._cid})`:`openCalEditM('${dk}',${e.id})`;
         const typeLabel=TYPE_LABELS[e.cl]||'Другое';
         const dlTxt=e.deadline?e.deadline.slice(5).replace('-','.'):'';
-        return`<div class="tl-row${e.done?' tl-done':''}">
+        return`<div class="tl-row${e.done?' tl-done':''}" ${isDraggable?`draggable="true" ondragstart="tlDragStart(event,${e.id},'${dk}')" ondragend="tlDragEnd(event)"`:''}>
           <span class="tl-chk" onclick="${chkFn}" title="${e.done?'Снять':'Выполнено'}">${e.done?'✓':''}</span>
           <span class="tl-time">${e.t}</span>
           <span class="tl-type ${e.cl}" style="font-size:8.5px;font-weight:600;padding:2px 5px;border-radius:4px">${typeLabel}</span>
@@ -2253,7 +2319,7 @@ function renderWeekTaskList(){
           <span class="tl-prio">${e.priority?priorityBadge(e):''}</span>
           ${dlTxt?`<span class="tl-dl">до ${dlTxt}</span>`:'<span class="tl-dl"></span>'}
         </div>`;
-      }).join(''):`<div class="tl-empty">нет задач · <span style="cursor:pointer;color:var(--blue)" onclick="openCalAdd(null,'${dk}')">добавить</span></div>`}
+      }).join(''):`<div class="tl-empty">${tlFilter==='all'?`нет задач · <span style="cursor:pointer;color:var(--blue)" onclick="openCalAdd(null,'${dk}')">добавить</span>`:tlFilter==='done'?'нет выполненных':'нет активных'}</div>`}
     </div>`;
   });
   el.innerHTML=html;
