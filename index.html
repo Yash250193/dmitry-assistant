@@ -222,8 +222,8 @@ body{background:var(--bg);color:var(--t1);font-family:'Onest',sans-serif;font-si
 .tl-row[draggable=true]{cursor:grab}
 .tl-row[draggable=true]:active{cursor:grabbing}
 .tl-row.tl-dragging{opacity:.4}
-.tl-day-group.drag-over{background:rgba(196,48,106,.06);border-radius:6px}
-.tl-day-group.drag-over .tl-day-hdr{background:rgba(196,48,106,.1)}
+.tl-day-group.tl-drag-over{background:rgba(196,48,106,.06);border-radius:6px}
+.tl-day-group.tl-drag-over .tl-day-hdr{background:rgba(196,48,106,.1)}
 @media(max-width:768px){
   /* ── TASK LIST BLOCK (неделя и месяц) ── */
   .tasklist-block{margin:0 0 16px;border-radius:0;border-left:none;border-right:none}
@@ -1046,7 +1046,7 @@ body.light{
 .bnav.active{color:var(--magenta);border-top-color:var(--magenta)}
 
 /* ── ЭКРАНЫ ── */
-#screen-week,#screen-focus,#screen-habits,#screen-notes,#screen-clients,#screen-avito,#screen-bytovka,#screen-finance,#screen-chat{background:var(--frost)}
+#screen-week,#screen-focus,#screen-habits,#screen-notes,#screen-clients,#screen-avito,#screen-bytovka,#screen-finance{background:var(--frost)}
 .screen-heading{font-family:'Unbounded',sans-serif;color:var(--ink);font-size:15px;font-weight:700;letter-spacing:-.4px}
 
 /* ── WEEK ── */
@@ -2071,10 +2071,10 @@ let openClientId=null;
 function goTo(s,focusId){
   if(typeof closeWeekPanel==='function')closeWeekPanel();
   if(typeof closeMonthPanel==='function')closeMonthPanel();
+  if(s==='goals')s='focus'; // goals merged into focus
   document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('.tnav').forEach(x=>x.classList.remove('active'));
   document.getElementById('screen-'+s).classList.add('active');
-  if(s==='goals')s='focus'; // goals merged into focus
   const tabs=['week','month','focus','clients','habits','notes','avito','bytovka','finance'];
   const tabNames=['Неделя','Месяц','Цели и Фокус','Клиенты','Привычки','Блокнот','Авито','Бытовка','Финансы'];
   const ti=tabs.indexOf(s);
@@ -2289,7 +2289,7 @@ let tlDragId=null,tlDragSrcKey=null;
 
 function setTlFilter(f,btn){
   tlFilter=f;
-  document.querySelectorAll('.tl-filter-chip').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tl-filter-chip:not(.mtl)').forEach(b=>b.classList.remove('active'));
   if(btn)btn.classList.add('active');
   renderWeekTaskList();
 }
@@ -2303,7 +2303,7 @@ function tlDragEnd(e){
   e.currentTarget.classList.remove('tl-dragging');
   document.querySelectorAll('.tl-drag-over').forEach(el=>el.classList.remove('tl-drag-over'));
 }
-function tlDragOver(e,dk){
+function tlDragOver(e){
   e.preventDefault();e.dataTransfer.dropEffect='move';
   document.querySelectorAll('.tl-drag-over').forEach(el=>el.classList.remove('tl-drag-over'));
   e.currentTarget.classList.add('tl-drag-over');
@@ -2333,7 +2333,7 @@ function renderWeekTaskList(){
     const evs=tlFilter==='active'?allEvs.filter(e=>!e.done):tlFilter==='done'?allEvs.filter(e=>e.done):allEvs;
     const doneCnt=allEvs.filter(e=>e.done).length;
     const isToday=dk===todayKey;
-    html+=`<div class="tl-day-group" ondragover="tlDragOver(event,'${dk}')" ondragleave="tlDragLeave(event)" ondrop="tlDrop(event,'${dk}')">
+    html+=`<div class="tl-day-group" ondragover="tlDragOver(event)" ondragleave="tlDragLeave(event)" ondrop="tlDrop(event,'${dk}')">
       <div class="tl-day-hdr${isToday?' tl-today':''}">
         <span class="tl-day-name">${dayName} · ${dayDate.getDate()} ${MONTHS[dayDate.getMonth()]}</span>
         <span class="tl-day-count">${doneCnt}/${allEvs.length}</span>
@@ -2616,7 +2616,7 @@ function toggleCalEvDoneM(key,id){
   const e=(mevs[key]||[]).find(x=>x.id===id);if(!e)return;
   e.done=!e.done;
   saveCalLS();
-  renderMRight();renderMonthStats();renderMonthTaskList();
+  renderMonth();renderMRight();renderMonthStats();renderMonthTaskList();
 }
 function toggleClientTaskFromCal(cid,tid){
   const cl=clients.find(x=>x.id===cid);if(!cl)return;
@@ -2624,7 +2624,7 @@ function toggleClientTaskFromCal(cid,tid){
   t.done=!t.done;
   saveClientsLS();
   if(document.getElementById('screen-week').classList.contains('active'))renderWeek();
-  if(document.getElementById('screen-month').classList.contains('active')){renderMRight();renderMonthStats();}
+  if(document.getElementById('screen-month').classList.contains('active')){renderMonth();renderMRight();renderMonthStats();renderMonthTaskList();}
 }
 
 function renderWeekStats(){
