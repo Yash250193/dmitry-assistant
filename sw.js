@@ -1,5 +1,5 @@
 // Service Worker — оффлайн-оболочка приложения + push-уведомления
-const CACHE='assistant-v3';
+const CACHE='assistant-v4';
 const SHELL=[
   './',
   './index.html',
