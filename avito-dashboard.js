@@ -2,22 +2,32 @@
 
 /**
  * avitoDashboard — модуль дашборда Авито.
- * Подключается к AvitoAPI (avito-api.js), рендерит экран #screen-avito.
+ * makeClientAvito(appClientId, container) — фабрика для карточки клиента.
+ * avitoDashboard — singleton для глобального экрана (обратная совместимость).
  */
-const avitoDashboard = (() => {
 
-  // ─── State ──────────────────────────────────────────────────────────────
+// ─── Общая фабрика ──────────────────────────────────────────────────────────
+function makeClientAvito(appClientId, container) {
+
+  const api = makeAvitoAPI(appClientId);
+
+  // ─── State ────────────────────────────────────────────────────────────────
   let userId       = null;
   let userProfile  = null;
   let currentPeriod = '7d';
   let isLoading    = false;
 
+  // ID-префикс для DOM-элементов чтобы не конфликтовать между клиентами
+  const pfx = 'av' + appClientId + '_';
+
+  function el(id) { return container.querySelector('#' + pfx + id); }
+
   // ─── CSS ────────────────────────────────────────────────────────────────
   function injectStyles() {
     if (document.getElementById('avito-dash-styles')) return;
-    const el = document.createElement('style');
-    el.id = 'avito-dash-styles';
-    el.textContent = `
+    const s = document.createElement('style');
+    s.id = 'avito-dash-styles';
+    s.textContent = `
 /* ── AVITO SCREEN ─────────────────────────────────────────────────── */
 #screen-avito{overflow-y:auto;padding:20px;background:var(--bg)}
 #screen-avito::-webkit-scrollbar{width:4px}
@@ -100,7 +110,7 @@ const avitoDashboard = (() => {
   .av-connect-card{padding:20px}
 }
     `;
-    document.head.appendChild(el);
+    document.head.appendChild(s);
   }
 
   // ─── Period helpers ──────────────────────────────────────────────────────
@@ -170,22 +180,29 @@ const avitoDashboard = (() => {
 
   function pad(n) { return String(n).padStart(2, '0'); }
 
+  function esc(s) {
+    return String(s)
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;');
+  }
+
   // ─── Screen entry point ──────────────────────────────────────────────────
 
   function render() {
-    const screen = document.getElementById('screen-avito');
-    if (!screen) return;
-    if (!avitoAPI.hasCreds()) {
-      renderConnectForm(screen);
+    if (!container) return;
+    if (!api.hasCreds()) {
+      renderConnectForm();
     } else {
-      renderDashboard(screen);
+      renderDashboard();
     }
   }
 
   // ─── Connect form ─────────────────────────────────────────────────────────
 
-  function renderConnectForm(screen) {
-    screen.innerHTML = `
+  function renderConnectForm() {
+    container.innerHTML = `
       <div class="av-connect">
         <div class="av-connect-card">
           <div class="av-connect-logo">
@@ -197,61 +214,66 @@ const avitoDashboard = (() => {
           </div>
           <div class="av-field">
             <div class="av-label">Client ID</div>
-            <input class="av-input" id="aClientId" type="text" placeholder="z64w11Spm229NR-uXQAg" autocomplete="off" spellcheck="false">
+            <input class="av-input" id="${pfx}ClientId" type="text" placeholder="z64w11Spm229NR-uXQAg" autocomplete="off" spellcheck="false">
           </div>
           <div class="av-field">
             <div class="av-label">Client Secret</div>
-            <input class="av-input" id="aClientSecret" type="password" placeholder="••••••••••••••••••••••">
+            <input class="av-input" id="${pfx}ClientSecret" type="password" placeholder="••••••••••••••••••••••">
           </div>
-          <button class="av-connect-btn" id="aConnectBtn" onclick="avitoDashboard.connect()">Подключить профиль</button>
-          <div class="av-connect-err" id="aConnectErr"></div>
+          <button class="av-connect-btn" id="${pfx}ConnectBtn">Подключить профиль</button>
+          <div class="av-connect-err" id="${pfx}ConnectErr"></div>
           <div class="av-connect-hint">
             💡 Получите ключи в <strong>Личном кабинете Авито → Настройки → Для разработчиков</strong>.<br>
-            Ключи хранятся только в вашем браузере (localStorage).<br><br>
-            ⚠️ Откройте через HTTP-сервер, не как файл:<br>
-            <code>npx serve .</code> или <code>python -m http.server 8080</code>
+            Ключи хранятся в вашем браузере (localStorage), привязаны к этому клиенту.
           </div>
         </div>
       </div>`;
 
-    const idEl = document.getElementById('aClientId');
-    const secEl = document.getElementById('aClientSecret');
-    idEl.addEventListener('keydown', e => { if (e.key === 'Enter') secEl.focus(); });
-    secEl.addEventListener('keydown', e => { if (e.key === 'Enter') avitoDashboard.connect(); });
+    const idEl  = el('ClientId');
+    const secEl = el('ClientSecret');
+    const btn   = el('ConnectBtn');
+    if (btn)   btn.onclick = () => inst.connect();
+    if (idEl)  idEl.addEventListener('keydown',  e => { if (e.key === 'Enter') secEl?.focus(); });
+    if (secEl) secEl.addEventListener('keydown', e => { if (e.key === 'Enter') inst.connect(); });
   }
 
   // ─── Dashboard shell ──────────────────────────────────────────────────────
 
-  function renderDashboard(screen) {
+  function renderDashboard() {
     const name = _profileName();
     const sub  = userProfile?.email || (userId ? `ID: ${userId}` : 'Профиль подключён');
 
-    screen.innerHTML = `
+    container.innerHTML = `
       <div class="av-header">
         <div class="av-header-av">А</div>
         <div class="av-header-info">
-          <div class="av-header-name" id="aProfileName">${esc(name)}</div>
-          <div class="av-header-sub"  id="aProfileSub">${esc(sub)}</div>
+          <div class="av-header-name" id="${pfx}ProfileName">${esc(name)}</div>
+          <div class="av-header-sub"  id="${pfx}ProfileSub">${esc(sub)}</div>
         </div>
         <div class="av-header-btns">
-          <button class="av-hbtn" id="aRefreshBtn" onclick="avitoDashboard.refresh()">↺ Обновить</button>
-          <button class="av-hbtn danger" onclick="avitoDashboard.disconnect()">Отключить</button>
+          <button class="av-hbtn" id="${pfx}RefreshBtn">↺ Обновить</button>
+          <button class="av-hbtn danger" id="${pfx}DisconnectBtn">Отключить</button>
         </div>
       </div>
 
-      <div class="av-cors" id="avCorsNotice">
+      <div class="av-cors" id="${pfx}CorsNotice">
         <strong>⚠️ CORS ограничение</strong> — браузер блокирует запросы к api.avito.ru при открытии файла напрямую.<br>
         Решение: запустите <code>npx serve .</code> в папке проекта и откройте <code>http://localhost:3000</code>
       </div>
 
-      <div class="av-periods" id="avPeriods">${
+      <div class="av-periods" id="${pfx}Periods">${
         Object.entries(PERIOD_LABELS).map(([k, v]) =>
-          `<button class="av-period-btn${k === currentPeriod ? ' active' : ''}"
-            onclick="avitoDashboard.setPeriod('${k}')">${v}</button>`
+          `<button class="av-period-btn${k === currentPeriod ? ' active' : ''}" data-period="${k}">${v}</button>`
         ).join('')
       }</div>
 
-      <div id="avMetrics"></div>`;
+      <div id="${pfx}Metrics"></div>`;
+
+    el('RefreshBtn').onclick    = () => inst.refresh();
+    el('DisconnectBtn').onclick = () => inst.disconnect();
+    container.querySelectorAll('.av-period-btn').forEach(b => {
+      b.onclick = () => inst.setPeriod(b.dataset.period);
+    });
 
     loadAndRender();
   }
@@ -264,18 +286,10 @@ const avitoDashboard = (() => {
       || 'Профиль';
   }
 
-  function esc(s) {
-    return String(s)
-      .replace(/&/g,'&amp;')
-      .replace(/</g,'&lt;')
-      .replace(/>/g,'&gt;')
-      .replace(/"/g,'&quot;');
-  }
-
   // ─── Skeleton ─────────────────────────────────────────────────────────────
 
   function renderSkeleton() {
-    const wrap = document.getElementById('avMetrics');
+    const wrap = el('Metrics');
     if (!wrap) return;
     const groups = [
       { t: '💰 Финансы', n: 9 },
@@ -298,22 +312,20 @@ const avitoDashboard = (() => {
     if (isLoading) return;
     isLoading = true;
 
-    const btn = document.getElementById('aRefreshBtn');
+    const btn = el('RefreshBtn');
     if (btn) { btn.disabled = true; btn.textContent = '↻ Загрузка…'; }
 
     renderSkeleton();
 
     const range = getDateRange(currentPeriod);
 
-    // Безопасный вызов — никогда не бросает, возвращает { _error: msg } при ошибке
     const safe = async fn => {
       try { return await fn(); }
       catch (e) { return { _error: e.message }; }
     };
 
-    // 1. Получаем профиль если ещё не загружен
     if (!userId) {
-      const self = await safe(() => avitoAPI.getSelf());
+      const self = await safe(() => api.getSelf());
       if (self && !self._error) {
         userId      = self.id || self.user_id;
         userProfile = self;
@@ -323,23 +335,20 @@ const avitoDashboard = (() => {
       }
     }
 
-    // 2. Параллельно грузим всё остальное
     const [balRes, itemsRes, callsRes, chatsRes, finRes] = await Promise.all([
-      safe(() => avitoAPI.getBalances()),
-      safe(() => avitoAPI.getItems()),
-      safe(() => avitoAPI.getCalls(range.dtFrom, range.dtTo)),
-      userId ? safe(() => avitoAPI.getChats(userId)) : Promise.resolve({ _error: 'нет userId' }),
-      safe(() => avitoAPI.getFinancialStats(range.dateFrom, range.dateTo)),
+      safe(() => api.getBalances()),
+      safe(() => api.getItems()),
+      safe(() => api.getCalls(range.dtFrom, range.dtTo)),
+      userId ? safe(() => api.getChats(userId)) : Promise.resolve({ _error: 'нет userId' }),
+      safe(() => api.getFinancialStats(range.dateFrom, range.dateTo)),
     ]);
 
-    // 3. Статистика объявлений — нужны ID из itemsRes
     let statsRes = { _error: 'нет userId' };
     if (userId) {
       const ids = _extractItemIds(itemsRes);
-      statsRes = await safe(() => avitoAPI.getItemsStats(userId, range.dateFrom, range.dateTo, ids));
+      statsRes = await safe(() => api.getItemsStats(userId, range.dateFrom, range.dateTo, ids));
     }
 
-    // Проверяем CORS
     [balRes, itemsRes, callsRes, finRes, statsRes].forEach(r => {
       if (r?._error) _checkCors(r._error);
     });
@@ -351,8 +360,8 @@ const avitoDashboard = (() => {
   }
 
   function _updateHeader(user) {
-    const nameEl = document.getElementById('aProfileName');
-    const subEl  = document.getElementById('aProfileSub');
+    const nameEl = el('ProfileName');
+    const subEl  = el('ProfileSub');
     if (nameEl) nameEl.textContent = user.name || user.profile?.name || user.login || 'Профиль';
     if (subEl)  subEl.textContent  = user.email || `ID: ${user.id || user.user_id}`;
   }
@@ -363,8 +372,8 @@ const avitoDashboard = (() => {
       || msg.toLowerCase().includes('cors')
       || msg.toLowerCase().includes('не удалось подключиться');
     if (isCors) {
-      const el = document.getElementById('avCorsNotice');
-      if (el) el.classList.add('show');
+      const notice = el('CorsNotice');
+      if (notice) notice.classList.add('show');
     }
   }
 
@@ -377,7 +386,7 @@ const avitoDashboard = (() => {
   // ─── Render final data ───────────────────────────────────────────────────
 
   function renderData({ balRes, itemsRes, statsRes, callsRes, chatsRes, finRes }) {
-    const wrap = document.getElementById('avMetrics');
+    const wrap = el('Metrics');
     if (!wrap) return;
 
     const fin      = _processFin(balRes, finRes);
@@ -419,9 +428,7 @@ const avitoDashboard = (() => {
   function _processFin(balRes, finRes) {
     const out = {};
 
-    // Баланс из /cpa/v2/balances/
     if (balRes && !balRes._error) {
-      // Пробуем разные возможные структуры ответа
       out.wallet  = balRes.real         ?? balRes.balance?.real    ?? balRes.wallet          ?? null;
       out.bonus   = balRes.bonus        ?? balRes.balance?.bonus   ?? null;
       out.advance = balRes.advance?.real ?? balRes.advance          ?? null;
@@ -429,14 +436,12 @@ const avitoDashboard = (() => {
       out._balErr = balRes?._error;
     }
 
-    // Финансовая статистика из /cpa/v1/statistics/
     if (finRes && !finRes._error) {
       const items = finRes.result?.items || finRes.items || [];
       let expenses = 0, cpa = 0, services = 0, commission = 0,
           bonuses = 0, minAdv = 0, delivery = 0;
 
       for (const item of items) {
-        // Пробуем разные имена полей (API может возвращать по-разному)
         expenses   += item.sum             || item.total            || 0;
         cpa        += item.sumSale         || item.cpa              || item.sum_sale       || 0;
         services   += item.sumService      || item.services         || item.sum_service    || 0;
@@ -466,7 +471,6 @@ const avitoDashboard = (() => {
     if (!itemsRes || itemsRes._error) return { _error: itemsRes?._error };
     const items = itemsRes.items || itemsRes.resources || [];
     const total = itemsRes.total || items.length;
-    // Считаем продвигаемые — любые с признаком VAS / promotion
     const promoted = items.filter(i =>
       i.vas_type || i.promotion || i.isPromoted || i.status === 'promoted' ||
       (i.services && i.services.length > 0)
@@ -491,7 +495,6 @@ const avitoDashboard = (() => {
 
   function _processCalls(callsRes) {
     if (!callsRes || callsRes._error) return { _error: callsRes?._error };
-    // Пробуем разные ключи в ответе
     const calls = callsRes.calls || callsRes.result?.calls || callsRes.items || [];
     const total = calls.length;
     const answered = calls.filter(c =>
@@ -524,13 +527,13 @@ const avitoDashboard = (() => {
       cards: [
         { ...rc(f.wallet,   be), label: 'Баланс кошелька' },
         { ...rc(f.advance,  be), label: 'Баланс аванса' },
-        { val: f._finErr ? '—' : (f.expenses !== undefined ? fmtRub(f.expenses) : '—'), label: 'Итого расходы',    cls: 'c-rub', errTitle: fe },
-        { val: f._finErr ? '—' : (f.cpa      !== undefined ? fmtRub(f.cpa)      : '—'), label: 'Сумма за ЦД',      cls: 'c-rub', errTitle: fe },
-        { val: f._finErr ? '—' : (f.services !== undefined ? fmtRub(f.services) : '—'), label: 'Доп услуги',       cls: 'c-rub', errTitle: fe },
-        { val: f._finErr ? '—' : (f.commission !== undefined ? fmtRub(f.commission) : '—'), label: 'Комиссия',     cls: 'c-rub', errTitle: fe },
-        { val: f._finErr ? '—' : (f.bonuses  !== undefined ? fmtRub(f.bonuses)  : '—'), label: 'Бонусы',           cls: 'c-rub', errTitle: fe },
-        { val: f._finErr ? '—' : (f.minAdv   !== undefined ? fmtRub(f.minAdv)   : '—'), label: 'Мин. аванс',       cls: 'c-rub', errTitle: fe },
-        { val: f._finErr ? '—' : (f.delivery !== undefined ? fmtRub(f.delivery) : '—'), label: 'Авито доставка',   cls: 'c-rub', errTitle: fe },
+        { val: f._finErr ? '—' : (f.expenses   !== undefined ? fmtRub(f.expenses)   : '—'), label: 'Итого расходы',    cls: 'c-rub', errTitle: fe },
+        { val: f._finErr ? '—' : (f.cpa        !== undefined ? fmtRub(f.cpa)        : '—'), label: 'Сумма за ЦД',      cls: 'c-rub', errTitle: fe },
+        { val: f._finErr ? '—' : (f.services   !== undefined ? fmtRub(f.services)   : '—'), label: 'Доп услуги',       cls: 'c-rub', errTitle: fe },
+        { val: f._finErr ? '—' : (f.commission !== undefined ? fmtRub(f.commission) : '—'), label: 'Комиссия',         cls: 'c-rub', errTitle: fe },
+        { val: f._finErr ? '—' : (f.bonuses    !== undefined ? fmtRub(f.bonuses)    : '—'), label: 'Бонусы',           cls: 'c-rub', errTitle: fe },
+        { val: f._finErr ? '—' : (f.minAdv     !== undefined ? fmtRub(f.minAdv)     : '—'), label: 'Мин. аванс',       cls: 'c-rub', errTitle: fe },
+        { val: f._finErr ? '—' : (f.delivery   !== undefined ? fmtRub(f.delivery)   : '—'), label: 'Авито доставка',   cls: 'c-rub', errTitle: fe },
       ],
     };
   }
@@ -552,7 +555,7 @@ const avitoDashboard = (() => {
     const uniqViews = s.uniqViews || 0;
     const contacts  = s.contacts  || 0;
 
-    const cvr1 = views > 0     ? (uniqViews / views    * 100) : null;
+    const cvr1 = views > 0     ? (uniqViews / views     * 100) : null;
     const cvr2 = uniqViews > 0 ? (contacts  / uniqViews * 100) : null;
 
     const exp = fin.expenses;
@@ -567,11 +570,11 @@ const avitoDashboard = (() => {
         { val: e ? '—' : fmtNum(uniqViews),       label: 'Просмотры',                 cls: 'c-num', errTitle: e },
         { val: fmtPct(cvr2),                      label: 'Конверсия в контакт',       cls: 'c-pct' },
         { val: e ? '—' : fmtNum(contacts),        label: 'Контакты',                  cls: 'c-num', errTitle: e },
-        { val: '—',                               label: 'Конверсия в заявку',        cls: 'c-na'  }, // требует CRM
-        { val: '—',                               label: 'Заявки',                   cls: 'c-na'  }, // требует CRM
+        { val: '—',                               label: 'Конверсия в заявку',        cls: 'c-na'  },
+        { val: '—',                               label: 'Заявки',                    cls: 'c-na'  },
         { val: costView    ? fmtRub(costView)    : '—', label: 'Стоимость просмотра',  cls: 'c-rub' },
         { val: costContact ? fmtRub(costContact) : '—', label: 'Стоимость контакта',   cls: 'c-rub' },
-        { val: '—',                               label: 'Стоимость заявки',          cls: 'c-na'  }, // требует CRM
+        { val: '—',                               label: 'Стоимость заявки',          cls: 'c-na'  },
       ],
     };
   }
@@ -583,7 +586,7 @@ const avitoDashboard = (() => {
       cards: [
         { val: e ? '—' : fmtNum(c.total),    label: 'Звонки всего',          cls: 'c-num',  errTitle: e },
         { val: e ? '—' : fmtNum(c.answered), label: 'Отвечено',              cls: 'c-num',  errTitle: e },
-        { val: e ? '—' : fmtNum(c.missed),   label: 'Пропущено',             cls: c.missed > 0 ? 'c-num' : 'c-num', errTitle: e },
+        { val: e ? '—' : fmtNum(c.missed),   label: 'Пропущено',             cls: 'c-num',  errTitle: e },
         { val: e ? '—' : fmtTime(c.avgWait), label: 'Ср. ожидание',          cls: 'c-time', errTitle: e },
         { val: e ? '—' : fmtTime(c.avgDur),  label: 'Ср. продолжительность', cls: 'c-time', errTitle: e },
       ],
@@ -596,7 +599,6 @@ const avitoDashboard = (() => {
       title: '💬 Чаты и сообщения',
       cards: [
         { val: e ? '—' : fmtNum(c.total), label: 'Чаты всего',               cls: 'c-num', errTitle: e },
-        // Детальная статистика требует дополнительных запросов per-chat
         { val: '—', label: 'Ср. время первого ответа', cls: 'c-na' },
         { val: '—', label: 'Ср. время ответов',        cls: 'c-na' },
         { val: '—', label: 'Сообщений на 1 чат',       cls: 'c-na' },
@@ -610,7 +612,6 @@ const avitoDashboard = (() => {
       title: '⭐ Прочее',
       cards: [
         { val: e ? '—' : fmtNum(s.favorites), label: 'Избранные',          cls: 'c-num', errTitle: e },
-        // Эти метрики требуют дополнительных эндпоинтов (/ratings/v1, рассылки)
         { val: '—', label: 'Новые отзывы',          cls: 'c-na' },
         { val: '—', label: 'Рассылок отправлено',   cls: 'c-na' },
         { val: '—', label: 'Рассылок ознакомились', cls: 'c-na' },
@@ -621,7 +622,7 @@ const avitoDashboard = (() => {
 
   // ─── Public API ───────────────────────────────────────────────────────────
 
-  return {
+  const inst = {
 
     onActivate() {
       injectStyles();
@@ -629,10 +630,10 @@ const avitoDashboard = (() => {
     },
 
     async connect() {
-      const idEl  = document.getElementById('aClientId');
-      const secEl = document.getElementById('aClientSecret');
-      const btn   = document.getElementById('aConnectBtn');
-      const errEl = document.getElementById('aConnectErr');
+      const idEl  = el('ClientId');
+      const secEl = el('ClientSecret');
+      const btn   = el('ConnectBtn');
+      const errEl = el('ConnectErr');
 
       const clientId = idEl?.value?.trim();
       const secret   = secEl?.value?.trim();
@@ -646,11 +647,10 @@ const avitoDashboard = (() => {
       if (errEl) errEl.classList.remove('show');
 
       try {
-        const user = await avitoAPI.connect(clientId, secret);
+        const user = await api.connect(clientId, secret);
         userId      = user.id || user.user_id;
         userProfile = user;
-        renderDashboard(document.getElementById('screen-avito'));
-        // loadAndRender() вызывается внутри renderDashboard
+        renderDashboard();
       } catch (e) {
         if (btn)  { btn.disabled = false; btn.textContent = 'Подключить профиль'; }
         if (errEl){ errEl.textContent = e.message; errEl.classList.add('show'); }
@@ -659,11 +659,10 @@ const avitoDashboard = (() => {
 
     disconnect() {
       if (!confirm('Отключить профиль Авито? Учётные данные будут удалены из браузера.')) return;
-      avitoAPI.clearAll();
+      api.clearAll();
       userId      = null;
       userProfile = null;
-      const screen = document.getElementById('screen-avito');
-      if (screen) renderConnectForm(screen);
+      renderConnectForm();
     },
 
     refresh() {
@@ -673,12 +672,13 @@ const avitoDashboard = (() => {
     setPeriod(p) {
       if (p === currentPeriod) return;
       currentPeriod = p;
-      // Обновляем активную кнопку
-      document.querySelectorAll('.av-period-btn').forEach(b => {
-        b.classList.toggle('active', b.textContent.trim() === PERIOD_LABELS[p]);
+      container.querySelectorAll('.av-period-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.period === p);
       });
       loadAndRender();
     },
 
   };
-})();
+
+  return inst;
+}
