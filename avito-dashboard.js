@@ -291,7 +291,7 @@ function makeClientAvito(appClientId, container) {
     const wrap = el('Metrics');
     if (!wrap) return;
     const groups = [
-      { t: '💰 Финансы', n: 9 },
+      { t: '💰 Финансы', n: 7 },
       { t: '📋 Объявления', n: 2 },
       { t: '📊 Показатели эффективности', n: 10 },
       { t: '📞 Звонки', n: 5 },
@@ -335,12 +335,20 @@ function makeClientAvito(appClientId, container) {
     }
 
     const [balRes, itemsRes, callsRes, chatsRes, finRes] = await Promise.all([
-      safe(() => api.getBalances()),
-      safe(() => api.getItems()),
+      userId ? safe(() => api.getBalances(userId))                          : Promise.resolve({ _error: 'нет userId' }),
+      userId ? safe(() => api.getItems(userId))                             : Promise.resolve({ _error: 'нет userId' }),
       safe(() => api.getCalls(range.dtFrom, range.dtTo)),
-      userId ? safe(() => api.getChats(userId)) : Promise.resolve({ _error: 'нет userId' }),
-      safe(() => api.getFinancialStats(range.dateFrom, range.dateTo)),
+      userId ? safe(() => api.getChats(userId))                             : Promise.resolve({ _error: 'нет userId' }),
+      userId ? safe(() => api.getFinancialStats(userId, range.dateFrom, range.dateTo)) : Promise.resolve({ _error: 'нет userId' }),
     ]);
+
+    // Логируем ответы в консоль для отладки
+    console.log('[Avito] userId:', userId);
+    console.log('[Avito] balance:', balRes);
+    console.log('[Avito] items:', itemsRes);
+    console.log('[Avito] calls:', callsRes);
+    console.log('[Avito] chats:', chatsRes);
+    console.log('[Avito] fin:', finRes);
 
     let statsRes = { _error: 'нет userId' };
     if (userId) {
@@ -428,36 +436,37 @@ function makeClientAvito(appClientId, container) {
     const out = {};
 
     if (balRes && !balRes._error) {
-      out.wallet  = balRes.real         ?? balRes.balance?.real    ?? balRes.wallet          ?? null;
-      out.bonus   = balRes.bonus        ?? balRes.balance?.bonus   ?? null;
-      out.advance = balRes.advance?.real ?? balRes.advance          ?? null;
+      // GET /core/v1/accounts/{userId}/balance → {real, bonus}
+      out.wallet  = balRes.real   ?? balRes.balance ?? null;
+      out.bonus   = balRes.bonus  ?? null;
+      out.advance = null; // не возвращается этим endpoint-ом
     } else {
       out._balErr = balRes?._error;
     }
 
     if (finRes && !finRes._error) {
+      // /cpa/v2/statistics/ → {result:{items:[{amountTotal,amountService,amountSale,...}]}}
+      // или просто {items:[...]} — пробуем оба варианта
       const items = finRes.result?.items || finRes.items || [];
-      let expenses = 0, cpa = 0, services = 0, commission = 0,
-          bonuses = 0, minAdv = 0, delivery = 0;
+      let expenses = 0, services = 0, vas = 0, xl = 0, highlight = 0;
 
       for (const item of items) {
-        expenses   += item.sum             || item.total            || 0;
-        cpa        += item.sumSale         || item.cpa              || item.sum_sale       || 0;
-        services   += item.sumService      || item.services         || item.sum_service    || 0;
-        commission += item.sumCommission   || item.commission       || item.sum_commission || 0;
-        bonuses    += item.sumBonus        || item.bonuses          || item.sum_bonus      || 0;
-        minAdv     += item.sumMinimalAdvance || item.minAdvance     || item.min_advance    || 0;
-        delivery   += item.sumDelivery     || item.delivery         || item.sum_delivery   || 0;
+        // v2 поля
+        expenses  += item.amountTotal    || item.sum    || item.total || 0;
+        services  += item.amountService  || item.sumService || 0;
+        vas       += item.amountVas      || item.sumSale || item.cpa || 0;
+        xl        += item.amountXl       || 0;
+        highlight += item.amountHighlight || 0;
       }
 
+      console.log('[Avito] fin items:', items);
+
       if (items.length > 0) {
-        out.expenses   = expenses;
-        out.cpa        = cpa;
-        out.services   = services;
-        out.commission = commission;
-        out.bonuses    = bonuses;
-        out.minAdv     = minAdv;
-        out.delivery   = delivery;
+        out.expenses  = expenses;
+        out.services  = services;
+        out.vas       = vas;
+        out.xl        = xl;
+        out.highlight = highlight;
       }
     } else {
       out._finErr = finRes?._error;
@@ -494,18 +503,19 @@ function makeClientAvito(appClientId, container) {
 
   function _processCalls(callsRes) {
     if (!callsRes || callsRes._error) return { _error: callsRes?._error };
-    const calls = callsRes.calls || callsRes.result?.calls || callsRes.items || [];
-    const total = calls.length;
+    // Авито: {result:{calls:[...]}} или {calls:[...]}
+    const calls = callsRes.result?.calls || callsRes.calls || callsRes.items || [];
+    console.log('[Avito] calls raw:', callsRes, 'parsed:', calls.length);
+    const total = callsRes.result?.total || callsRes.total || calls.length;
     const answered = calls.filter(c =>
-      (c.talk_duration > 0) || c.status === 'success' || c.status === 'answered'
+      (c.talkDuration > 0) || (c.talk_duration > 0) || c.status === 'success' || c.isSuccessful === true
     ).length;
     const missed = total - answered;
-    const avgWait = total > 0
-      ? calls.reduce((s, c) => s + (c.wait_duration || c.waiting_duration || 0), 0) / total
-      : 0;
-    const answ = calls.filter(c => (c.talk_duration || 0) > 0);
-    const avgDur = answ.length > 0
-      ? answ.reduce((s, c) => s + c.talk_duration, 0) / answ.length
+    const allWait = calls.map(c => c.waitDuration || c.wait_duration || 0);
+    const avgWait = allWait.length ? allWait.reduce((a, b) => a + b, 0) / allWait.length : 0;
+    const answCalls = calls.filter(c => (c.talkDuration || c.talk_duration || 0) > 0);
+    const avgDur = answCalls.length
+      ? answCalls.reduce((s, c) => s + (c.talkDuration || c.talk_duration || 0), 0) / answCalls.length
       : 0;
     return { total, answered, missed, avgWait, avgDur };
   }
@@ -513,26 +523,26 @@ function makeClientAvito(appClientId, container) {
   function _processChats(chatsRes) {
     if (!chatsRes || chatsRes._error) return { _error: chatsRes?._error };
     const chats = chatsRes.chats || chatsRes.result?.chats || [];
-    return { total: chats.length };
+    // meta.count — реальное число чатов (может быть больше лимита 100)
+    const total = chatsRes.meta?.count ?? chatsRes.meta?.total ?? chats.length;
+    return { total };
   }
 
   // ─── Group builders ───────────────────────────────────────────────────────
 
   function _groupFinance(f) {
     const be = f._balErr, fe = f._finErr;
-    const rc  = (v, e) => ({ val: e ? '—' : (v !== undefined ? fmtRub(v) : '—'), label: '', cls: 'c-rub', errTitle: e });
+    const rub = (v, e) => ({ val: (e || v === null || v === undefined) ? '—' : fmtRub(v), label: '', cls: 'c-rub', errTitle: e || undefined });
     return {
       title: '💰 Финансы',
       cards: [
-        { ...rc(f.wallet,   be), label: 'Баланс кошелька' },
-        { ...rc(f.advance,  be), label: 'Баланс аванса' },
-        { val: f._finErr ? '—' : (f.expenses   !== undefined ? fmtRub(f.expenses)   : '—'), label: 'Итого расходы',    cls: 'c-rub', errTitle: fe },
-        { val: f._finErr ? '—' : (f.cpa        !== undefined ? fmtRub(f.cpa)        : '—'), label: 'Сумма за ЦД',      cls: 'c-rub', errTitle: fe },
-        { val: f._finErr ? '—' : (f.services   !== undefined ? fmtRub(f.services)   : '—'), label: 'Доп услуги',       cls: 'c-rub', errTitle: fe },
-        { val: f._finErr ? '—' : (f.commission !== undefined ? fmtRub(f.commission) : '—'), label: 'Комиссия',         cls: 'c-rub', errTitle: fe },
-        { val: f._finErr ? '—' : (f.bonuses    !== undefined ? fmtRub(f.bonuses)    : '—'), label: 'Бонусы',           cls: 'c-rub', errTitle: fe },
-        { val: f._finErr ? '—' : (f.minAdv     !== undefined ? fmtRub(f.minAdv)     : '—'), label: 'Мин. аванс',       cls: 'c-rub', errTitle: fe },
-        { val: f._finErr ? '—' : (f.delivery   !== undefined ? fmtRub(f.delivery)   : '—'), label: 'Авито доставка',   cls: 'c-rub', errTitle: fe },
+        { ...rub(f.wallet,   be), label: 'Баланс кошелька' },
+        { ...rub(f.bonus,    be), label: 'Бонусный счёт' },
+        { ...rub(f.expenses, fe), label: 'Итого расходы' },
+        { ...rub(f.services, fe), label: 'Услуги продвижения' },
+        { ...rub(f.vas,      fe), label: 'VAS / XL / выделение' },
+        { ...rub(f.xl,       fe), label: 'XL-объявления' },
+        { ...rub(f.highlight,fe), label: 'Выделение цветом' },
       ],
     };
   }
@@ -557,7 +567,7 @@ function makeClientAvito(appClientId, container) {
     const cvr1 = views > 0     ? (uniqViews / views     * 100) : null;
     const cvr2 = uniqViews > 0 ? (contacts  / uniqViews * 100) : null;
 
-    const exp = fin.expenses;
+    const exp = fin.expenses || fin.services || null;
     const costView    = (exp && uniqViews > 0) ? exp / uniqViews : null;
     const costContact = (exp && contacts  > 0) ? exp / contacts  : null;
 

@@ -182,19 +182,19 @@ class AvitoAPI {
   }
 
   /**
-   * Баланс кошелька и аванса
-   * GET /cpa/v2/balances/
+   * Баланс кошелька
+   * GET /core/v1/accounts/{user_id}/balance
    */
-  getBalances() {
-    return this._req('GET', '/cpa/v2/balances/');
+  getBalances(userId) {
+    return this._req('GET', `/core/v1/accounts/${userId}/balance`);
   }
 
   /**
    * Список активных объявлений
-   * GET /core/v1/items?status=active&per_page=100
+   * GET /core/v1/accounts/{user_id}/items?status=active&per_page=100
    */
-  getItems() {
-    return this._req('GET', '/core/v1/items?status=active&per_page=100');
+  getItems(userId) {
+    return this._req('GET', `/core/v1/accounts/${userId}/items?status=active&per_page=100`);
   }
 
   /**
@@ -238,11 +238,11 @@ class AvitoAPI {
 
   /**
    * Финансовая статистика (расходы по категориям)
-   * GET /cpa/v1/statistics/?dateFrom=...&dateTo=...
+   * GET /cpa/v2/statistics/?dateFrom=...&dateTo=...
    */
-  getFinancialStats(dateFrom, dateTo) {
+  getFinancialStats(userId, dateFrom, dateTo) {
     const p = new URLSearchParams({ dateFrom, dateTo });
-    return this._req('GET', `/cpa/v1/statistics/?${p}`);
+    return this._req('GET', `/cpa/v2/statistics/?${p}`);
   }
 }
 
