@@ -28,11 +28,6 @@ function makeClientAvito(appClientId, container) {
     const s = document.createElement('style');
     s.id = 'avito-dash-styles';
     s.textContent = `
-/* ── AVITO SCREEN ─────────────────────────────────────────────────── */
-#screen-avito{overflow-y:auto;padding:20px;background:var(--bg)}
-#screen-avito::-webkit-scrollbar{width:4px}
-#screen-avito::-webkit-scrollbar-thumb{background:var(--b2);border-radius:4px}
-
 /* ── CONNECT FORM ─────────────────────────────────────────────────── */
 .av-connect{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:70vh;padding:40px 16px}
 .av-connect-card{background:var(--s1);border:1px solid var(--b2);border-radius:var(--r2);padding:32px;width:100%;max-width:400px}
@@ -100,14 +95,18 @@ function makeClientAvito(appClientId, container) {
 .av-card.sk .av-lbl{height:10px;width:88%}
 @keyframes av-pulse{0%,100%{opacity:.45}55%{opacity:.85}}
 
+/* ── EMBEDDED (inside client detail panel) ─────────────────────────── */
+.av-connect{min-height:200px;padding:16px 8px}
+.av-connect-card{max-width:100%}
+
 /* ── MOBILE ───────────────────────────────────────────────────────── */
 @media(max-width:768px){
-  #screen-avito{padding:12px}
   .av-cards{grid-template-columns:repeat(2,1fr)}
   .av-header{flex-wrap:wrap}
   .av-header-btns{width:100%}
   .av-hbtn{flex:1;text-align:center}
   .av-connect-card{padding:20px}
+  .av-input{font-size:16px !important}
 }
     `;
     document.head.appendChild(s);

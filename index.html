@@ -399,7 +399,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Onest',sans-serif;font-si
 .client-detail{display:none;position:fixed;top:52px;right:0;bottom:0;width:360px;background:var(--s1);border-left:1px solid var(--b1);z-index:50;flex-direction:column;animation:slideInR .2s ease}
 .client-detail.show{display:flex}
 @keyframes slideInR{from{transform:translateX(100%)}to{transform:none}}
-.cd-header{display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid var(--b1);background:var(--s2)}
+.cd-header{display:flex;align-items:flex-start;justify-content:space-between;padding:16px;border-bottom:1px solid var(--b1);background:var(--s2)}
 .cd-title{font-size:13px;font-weight:500}
 .cd-close{background:none;border:none;color:var(--t2);font-size:20px;cursor:pointer;line-height:1}
 .cd-close:hover{color:var(--t1)}
@@ -939,6 +939,9 @@ select.mi{-webkit-appearance:none;cursor:pointer}
   .byt-stats{flex-wrap:wrap}
   .byt-stat{min-width:calc(50% - 6px)}
   .byt-toolbar{flex-direction:column;align-items:flex-start}
+
+  /* ── CLIENT DETAIL TABS ── */
+  .cd-tab{min-height:36px;font-size:11px;padding:5px 14px}
 
   /* ── iOS ZOOM FIX — font-size:16px на всех инпутах ── */
   .mi,
