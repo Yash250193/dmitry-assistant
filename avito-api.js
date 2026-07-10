@@ -21,11 +21,12 @@ const _IS_LOCAL = (() => {
 const _AVITO_BASE = _IS_LOCAL ? (window.location.origin + '/api') : _SB_PROXY;
 
 class AvitoAPI {
-  constructor() {
+  // suffix — уникальный суффикс для изоляции ключей разных клиентов в localStorage
+  constructor(suffix = '') {
     this.base     = _AVITO_BASE;
-    this.proxy    = !_IS_LOCAL;   // на проде идём через Supabase-прокси
-    this.TOKEN_KEY = 'avito_token_v1';
-    this.CREDS_KEY = 'avito_creds_v1';
+    this.proxy    = !_IS_LOCAL;
+    this.TOKEN_KEY = 'avito_token_v1' + (suffix ? '_' + suffix : '');
+    this.CREDS_KEY = 'avito_creds_v1' + (suffix ? '_' + suffix : '');
   }
 
   // ─── Credentials ──────────────────────────────────────────────────────────
@@ -245,5 +246,10 @@ class AvitoAPI {
   }
 }
 
-// Singleton-экземпляр для использования в dashboard
+// Singleton для обратной совместимости (глобальный экран Авито не используется)
 const avitoAPI = new AvitoAPI();
+
+// Фабрика: создаёт изолированный экземпляр API для конкретного клиента приложения
+function makeAvitoAPI(appClientId) {
+  return new AvitoAPI('c' + appClientId);
+}
