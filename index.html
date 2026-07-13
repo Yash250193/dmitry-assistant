@@ -210,9 +210,8 @@ body{background:var(--bg);color:var(--t1);font-family:'Onest',sans-serif;font-si
 .tl-name:hover{color:var(--blue)}
 .tl-prio{flex-shrink:0}
 .tl-dl{font-size:9px;color:var(--t3);white-space:nowrap;flex-shrink:0}
-.tl-del{background:none;border:none;color:var(--t3);cursor:pointer;font-size:13px;padding:0 2px;opacity:0;transition:opacity .15s;flex-shrink:0;line-height:1}
-.tl-row:hover .tl-del{opacity:1}
-.tl-del:hover{color:var(--coral)}
+.tl-del{background:none;border:none;color:var(--t3);cursor:pointer;font-size:13px;padding:0 4px;opacity:.35;transition:opacity .15s;flex-shrink:0;line-height:1}
+.tl-del:hover,.tl-del:active{opacity:1;color:var(--coral)}
 .tl-empty{padding:10px 14px;font-size:10px;color:var(--t3);font-style:italic}
 /* Фильтры списка задач */
 .tl-filters{display:flex;gap:4px}
@@ -627,9 +626,8 @@ select.mi{-webkit-appearance:none;cursor:pointer}
 .mrev.ev-done{opacity:.5}
 .mrev.ev-done .mrev-tx{text-decoration:line-through}
 .mrev.ev-done .mrev-chk{color:#86efac}
-.mrev-del{background:none;border:none;color:var(--t3);cursor:pointer;font-size:13px;padding:0 2px;opacity:0;transition:opacity .15s;flex-shrink:0;line-height:1}
-.mrev:hover .mrev-del{opacity:1}
-.mrev-del:hover{color:var(--coral)}
+.mrev-del{background:none;border:none;color:var(--t3);cursor:pointer;font-size:13px;padding:0 4px;opacity:.35;transition:opacity .15s;flex-shrink:0;line-height:1}
+.mrev-del:hover,.mrev-del:active{opacity:1;color:var(--coral)}
 
 /* STATS BLOCKS */
 .stats-block{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r2);padding:14px 16px;margin-top:12px}
