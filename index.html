@@ -461,6 +461,15 @@ body{background:var(--bg);color:var(--t1);font-family:'Onest',sans-serif;font-si
 .ats-dl.overdue{color:var(--coral);font-weight:700}
 .ats-dl.today{color:var(--magenta);font-weight:700}
 .ats-empty{text-align:center;color:var(--t3);font-size:12px;padding:22px 0}
+.ats-add-form{display:none;padding:8px 12px;gap:6px;border-bottom:1px solid var(--b1);background:var(--s2);flex-wrap:wrap;align-items:center}
+.ats-add-form.open{display:flex}
+.ats-add-inp{flex:1;min-width:120px;padding:6px 10px;border-radius:var(--r);border:1px solid var(--b2);background:var(--s1);color:var(--t1);font-size:12px;font-family:'Onest',sans-serif}
+.ats-add-sel{padding:6px 8px;border-radius:var(--r);border:1px solid var(--b2);background:var(--s1);color:var(--t2);font-size:11px;font-family:'Onest',sans-serif}
+.ats-add-date{padding:6px 8px;border-radius:var(--r);border:1px solid var(--b2);background:var(--s1);color:var(--t2);font-size:11px;font-family:'Onest',sans-serif}
+.ats-add-submit{padding:6px 12px;border-radius:var(--r);border:none;background:var(--magenta);color:#fff;font-size:12px;font-family:'Onest',sans-serif;cursor:pointer;font-weight:600;white-space:nowrap}
+.ats-add-submit:hover{opacity:.85}
+.tl-dl.tl-overdue{color:var(--coral);font-weight:700}
+.tl-dl.tl-today{color:var(--magenta);font-weight:700}
 
 /* CLIENT DETAIL PANEL (right side) */
 .client-detail{display:none;position:fixed;top:52px;right:0;bottom:0;width:360px;background:var(--s1);border-left:1px solid var(--b1);z-index:50;flex-direction:column;animation:slideInR .2s ease}
@@ -1705,7 +1714,7 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
     <div class="ats-filters">
       <button class="ats-fbtn active" data-f="active" onclick="setAtsFilter('active')">Активные</button>
       <button class="ats-fbtn" data-f="all" onclick="setAtsFilter('all')">Все</button>
-      <button class="ats-fbtn" data-f="done" onclick="setAtsFilter('done')">Выполнено</button>
+      <button class="ats-fbtn" data-f="done" onclick="setAtsFilter('done')">Выполненные</button>
     </div>
     <div id="allTasksList"></div>
   </div>
@@ -3495,41 +3504,91 @@ function setAtsFilter(f){
 function renderAllClientTasks(){
   const wrap=document.getElementById('allTasksList');if(!wrap)return;
   const todayStr=new Date().toISOString().split('T')[0];
-  let items=[];
-  clients.forEach(cl=>{(cl.tasks||[]).forEach(t=>{items.push({task:t,cid:cl.id,cname:cl.name});});});
-  const activeCount=items.filter(x=>!x.task.done).length;
-  const cntEl=document.getElementById('atsCount');
-  if(cntEl)cntEl.textContent=activeCount?activeCount+' активных':'нет активных';
-  if(atsFilter==='active')items=items.filter(x=>!x.task.done);
-  else if(atsFilter==='done')items=items.filter(x=>x.task.done);
   const prw={high:0,mid:1,low:2};
-  items.sort((a,b)=>{
-    if(!!a.task.done!==!!b.task.done)return a.task.done?1:-1;
-    const ad=a.task.deadline||'9999-99-99',bd=b.task.deadline||'9999-99-99';
-    if(ad!==bd)return ad<bd?-1:1;
-    return (prw[a.task.priority]??1)-(prw[b.task.priority]??1);
-  });
-  if(!items.length){wrap.innerHTML='<div class="ats-empty">Задач нет</div>';return;}
-  wrap.innerHTML=items.map(({task:t,cid,cname})=>{
-    const hasDl=t.deadline&&t.deadline.length>0;
-    const overdue=hasDl&&t.deadline<todayStr&&!t.done;
-    const today=hasDl&&t.deadline===todayStr;
-    const prLabel=t.priority==='high'?'Высокий':t.priority==='low'?'Низкий':'Средний';
-    const dl=hasDl
-      ?`<span class="ats-dl ${overdue?'overdue':today?'today':''}">${overdue?'⚠ ':today?'📍 ':''}${formatDate(t.deadline)}</span>`
-      :`<span class="ats-dl" style="opacity:.45">Без срока</span>`;
-    return`<div class="ats-row ${t.done?'done':''}">
-      <input type="checkbox" class="ats-cb" ${t.done?'checked':''} onchange="toggleClientTask(${cid},${t.id});renderAllClientTasks()">
-      <div class="ats-main" onclick="openClientDetail(${cid})">
-        <div class="ats-name">${t.text}</div>
-        <div class="ats-meta">
-          <span class="ats-client">${cname}</span>
-          <span class="ats-pr ${t.priority||'mid'}">${prLabel}</span>
-          ${dl}
-        </div>
+  let totalActive=0;
+  clients.forEach(cl=>{totalActive+=(cl.tasks||[]).filter(t=>!t.done).length;});
+  const cntEl=document.getElementById('atsCount');
+  if(cntEl)cntEl.textContent=totalActive?totalActive+' активных':'нет активных';
+  let html='';let hasAny=false;
+  clients.forEach(cl=>{
+    const allTasks=cl.tasks||[];
+    let tasks=[...allTasks];
+    if(atsFilter==='active')tasks=tasks.filter(t=>!t.done);
+    else if(atsFilter==='done')tasks=tasks.filter(t=>t.done);
+    if(!allTasks.length&&atsFilter!=='all')return;
+    if(!tasks.length&&atsFilter!=='all')return;
+    hasAny=true;
+    tasks.sort((a,b)=>{
+      if(!!a.done!==!!b.done)return a.done?1:-1;
+      const ad=a.deadline||'9999',bd=b.deadline||'9999';
+      if(ad!==bd)return ad<bd?-1:1;
+      return(prw[a.priority]??1)-(prw[b.priority]??1);
+    });
+    const doneCnt=allTasks.filter(t=>t.done).length;
+    html+=`<div class="tl-day-group">
+      <div class="tl-day-hdr">
+        <span class="tl-day-name" style="cursor:pointer" onclick="openClientDetail(${cl.id})">${cl.name}</span>
+        <span class="tl-day-count">${doneCnt}/${allTasks.length}</span>
+        <button class="tl-add-btn" onclick="toggleAtsAddForm(${cl.id})">+ задачу</button>
       </div>
+      <div class="ats-add-form" id="atsAddForm-${cl.id}">
+        <input class="ats-add-inp" id="atsInp-${cl.id}" placeholder="Текст задачи..." onkeydown="if(event.key==='Enter')atsAddTask(${cl.id})">
+        <select class="ats-add-sel" id="atsPr-${cl.id}">
+          <option value="mid">Средний</option>
+          <option value="high">Высокий</option>
+          <option value="low">Низкий</option>
+        </select>
+        <input class="ats-add-date" id="atsDl-${cl.id}" type="date">
+        <button class="ats-add-submit" onclick="atsAddTask(${cl.id})">Добавить</button>
+      </div>
+      ${tasks.length?tasks.map(t=>{
+        const hasDl=t.deadline&&t.deadline.length>0;
+        const overdue=hasDl&&t.deadline<todayStr&&!t.done;
+        const isToday=hasDl&&t.deadline===todayStr;
+        const dlTxt=hasDl?t.deadline.slice(5).replace('-','.'):'';
+        const dlCls=overdue?'tl-overdue':isToday?'tl-today':'';
+        const dlPfx=overdue?'⚠ ':isToday?'📍 ':'';
+        return`<div class="tl-row${t.done?' tl-done':''}">
+          <span class="tl-chk" onclick="atsToggleTask(${cl.id},${t.id})">${t.done?'✓':''}</span>
+          <span class="tl-time" style="min-width:0;width:0"></span>
+          <span class="tl-name" onclick="openClientDetail(${cl.id})">${t.text.replace(/</g,'&lt;')}</span>
+          <span class="tl-prio">${t.priority?priorityBadge(t):''}</span>
+          ${dlTxt?`<span class="tl-dl ${dlCls}">${dlPfx}до ${dlTxt}</span>`:'<span class="tl-dl"></span>'}
+          <button class="tl-del" title="Удалить" onclick="atsDelTask(${cl.id},${t.id})">✕</button>
+        </div>`;
+      }).join(''):`<div class="tl-empty">нет ${atsFilter==='done'?'выполненных':'активных'} задач</div>`}
     </div>`;
-  }).join('');
+  });
+  wrap.innerHTML=hasAny?html:'<div class="ats-empty" style="padding:20px;text-align:center">Задач нет</div>';
+}
+function toggleAtsAddForm(cid){
+  const f=document.getElementById('atsAddForm-'+cid);if(!f)return;
+  f.classList.toggle('open');
+  if(f.classList.contains('open'))document.getElementById('atsInp-'+cid)?.focus();
+}
+function atsAddTask(cid){
+  const inp=document.getElementById('atsInp-'+cid);
+  const pr=document.getElementById('atsPr-'+cid);
+  const dl=document.getElementById('atsDl-'+cid);
+  const text=inp?.value.trim();if(!text)return;
+  const cl=clients.find(x=>x.id===cid);if(!cl)return;
+  if(!cl.tasks)cl.tasks=[];
+  cl.tasks.push({id:nid++,text,priority:pr?.value||'mid',done:false,deadline:dl?.value||''});
+  saveClientsLS();
+  renderAllClientTasks();
+  renderClients();
+}
+function atsToggleTask(cid,tid){
+  const cl=clients.find(x=>x.id===cid);if(!cl)return;
+  const t=cl.tasks.find(x=>x.id===tid);if(!t)return;
+  t.done=!t.done;saveClientsLS();
+  renderAllClientTasks();renderClients();
+  const ct=document.getElementById('cdTasks-'+cid);if(ct)ct.innerHTML=renderClientTasks(cid);
+}
+function atsDelTask(cid,tid){
+  const cl=clients.find(x=>x.id===cid);if(!cl)return;
+  cl.tasks=cl.tasks.filter(x=>x.id!==tid);saveClientsLS();
+  renderAllClientTasks();renderClients();
 }
 
 let cdActiveTab='tasks';
