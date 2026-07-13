@@ -291,7 +291,7 @@ function makeClientAvito(appClientId, container) {
     const wrap = el('Metrics');
     if (!wrap) return;
     const groups = [
-      { t: '💰 Финансы', n: 7 },
+      { t: '💰 Финансы', n: 8 },
       { t: '📋 Объявления', n: 2 },
       { t: '📊 Показатели эффективности', n: 10 },
       { t: '📞 Звонки', n: 5 },
@@ -436,10 +436,11 @@ function makeClientAvito(appClientId, container) {
     const out = {};
 
     if (balRes && !balRes._error) {
-      // GET /core/v1/accounts/{userId}/balance → {real, bonus}
-      out.wallet  = balRes.real   ?? balRes.balance ?? null;
-      out.bonus   = balRes.bonus  ?? null;
-      out.advance = null; // не возвращается этим endpoint-ом
+      // GET /core/v1/accounts/{userId}/balance → {real, bonus, advance?}
+      console.log('[Avito] balance fields:', balRes);
+      out.wallet  = balRes.real    ?? balRes.balance      ?? null;
+      out.bonus   = balRes.bonus   ?? null;
+      out.advance = balRes.advance ?? balRes.advanceReal  ?? balRes.advance_real ?? balRes.prepayment ?? null;
     } else {
       out._balErr = balRes?._error;
     }
@@ -537,6 +538,7 @@ function makeClientAvito(appClientId, container) {
       title: '💰 Финансы',
       cards: [
         { ...rub(f.wallet,   be), label: 'Баланс кошелька' },
+        { ...rub(f.advance,  be), label: 'Баланс аванса' },
         { ...rub(f.bonus,    be), label: 'Бонусный счёт' },
         { ...rub(f.expenses, fe), label: 'Итого расходы' },
         { ...rub(f.services, fe), label: 'Услуги продвижения' },

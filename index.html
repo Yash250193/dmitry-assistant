@@ -141,8 +141,19 @@ body{background:var(--bg);color:var(--t1);font-family:'Onest',sans-serif;font-si
 .typing span:nth-child(2){animation-delay:.2s}.typing span:nth-child(3){animation-delay:.4s}
 @keyframes blink{0%,80%,100%{opacity:.3;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
 
+/* CALENDAR VIEW SWITCHER */
+.cal-view-switcher{display:flex;gap:0;padding:14px 20px 0;flex-shrink:0;background:var(--bg)}
+.cvs-btn{flex:1;padding:10px 0;font-size:13px;font-family:'Unbounded',sans-serif;font-weight:600;letter-spacing:-.3px;border:1px solid var(--b2);background:var(--s2);color:var(--t2);cursor:pointer;transition:all .18s}
+.cvs-btn:first-child{border-radius:10px 0 0 10px}
+.cvs-btn:last-child{border-radius:0 10px 10px 0;border-left:none}
+.cvs-btn.active{background:var(--magenta);border-color:var(--magenta);color:#fff}
+.cvs-btn:not(.active):hover{color:var(--t1);background:var(--s3)}
+#calViewWeek{flex:1;display:flex;flex-direction:row;overflow:hidden;min-height:0;min-width:0}
+#calViewMonth{flex:1;display:flex;flex-direction:row;overflow:hidden;min-height:0}
+.cal-view-hidden{display:none !important}
+
 /* WEEK */
-#screen-week{flex-direction:row;overflow:hidden;padding:0;background:var(--bg)}
+#screen-week{flex-direction:column;overflow:hidden;padding:0;background:var(--bg)}
 .week-left{flex:1;min-width:0;overflow-y:auto;padding:20px}
 .week-left::-webkit-scrollbar{width:4px}
 .week-left::-webkit-scrollbar-thumb{background:var(--b2)}
@@ -197,7 +208,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Onest',sans-serif;font-si
 .tl-day-hdr.tl-today .tl-day-name{color:var(--blue)}
 .tl-add-btn{background:none;border:none;font-size:10px;color:var(--blue);cursor:pointer;font-family:'Onest',sans-serif;padding:2px 6px;border-radius:4px;transition:background .15s}
 .tl-add-btn:hover{background:var(--blue3)}
-.tl-row{display:grid;grid-template-columns:20px 38px 64px 1fr auto auto;align-items:center;gap:8px;padding:7px 14px;border-bottom:1px solid rgba(var(--b1-rgb,226,222,240),.5);transition:background .12s;font-size:11px}
+.tl-row{display:grid;grid-template-columns:20px 38px 64px 1fr auto auto 18px;align-items:center;gap:8px;padding:7px 14px;border-bottom:1px solid rgba(var(--b1-rgb,226,222,240),.5);transition:background .12s;font-size:11px}
 .tl-row:last-child{border-bottom:none}
 .tl-row:hover{background:var(--s2)}
 .tl-row.tl-done .tl-name{text-decoration:line-through;opacity:.45}
@@ -210,6 +221,8 @@ body{background:var(--bg);color:var(--t1);font-family:'Onest',sans-serif;font-si
 .tl-name:hover{color:var(--blue)}
 .tl-prio{flex-shrink:0}
 .tl-dl{font-size:9px;color:var(--t3);white-space:nowrap;flex-shrink:0}
+.tl-del{background:none;border:none;color:var(--t3);cursor:pointer;font-size:13px;padding:0 4px;opacity:.35;transition:opacity .15s;flex-shrink:0;line-height:1}
+.tl-del:hover,.tl-del:active{opacity:1;color:var(--coral)}
 .tl-empty{padding:10px 14px;font-size:10px;color:var(--t3);font-style:italic}
 /* Фильтры списка задач */
 .tl-filters{display:flex;gap:4px}
@@ -236,7 +249,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Onest',sans-serif;font-si
   .tl-add-btn{min-height:36px;padding:0 10px}
   /* Строка задачи: скрываем тип, показываем важное */
   .tl-row{
-    grid-template-columns:22px 34px 1fr auto auto;
+    grid-template-columns:22px 34px 1fr auto auto 18px;
     gap:6px;padding:8px 12px;font-size:11px
   }
   .tl-type{display:none}
@@ -624,6 +637,8 @@ select.mi{-webkit-appearance:none;cursor:pointer}
 .mrev.ev-done{opacity:.5}
 .mrev.ev-done .mrev-tx{text-decoration:line-through}
 .mrev.ev-done .mrev-chk{color:#86efac}
+.mrev-del{background:none;border:none;color:var(--t3);cursor:pointer;font-size:13px;padding:0 4px;opacity:.35;transition:opacity .15s;flex-shrink:0;line-height:1}
+.mrev-del:hover,.mrev-del:active{opacity:1;color:var(--coral)}
 
 /* STATS BLOCKS */
 .stats-block{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r2);padding:14px 16px;margin-top:12px}
@@ -783,9 +798,23 @@ select.mi{-webkit-appearance:none;cursor:pointer}
   .bnav.active{color:var(--magenta);border-top-color:var(--magenta)}
   .bnav.active span{font-weight:700}
 
-  /* ── WEEK SCREEN ── */
+  /* ── CALENDAR SCREEN (объединённый) ── */
   #screen-week,#screen-week.active{padding:0;overflow-y:auto;overflow-x:hidden;flex-direction:column}
-  .week-left{overflow-y:visible;padding:0;flex:none}
+
+  /* Переключатель Неделя/Месяц */
+  .cal-view-switcher{padding:10px 14px 12px;position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--b1)}
+  .cvs-btn{font-size:11px;padding:10px 0}
+
+  /* Вид недели */
+  #calViewWeek{flex-direction:column;overflow-y:visible;overflow-x:hidden;flex:none;display:flex}
+  .week-left{overflow-y:visible;padding:0;flex:none;min-width:0}
+
+  /* Вид месяца */
+  #calViewMonth:not(.cal-view-hidden){
+    flex-direction:column !important;
+    overflow-y:auto;
+    flex:none
+  }
 
   /* Всплывающее окно дня на мобильном — на весь экран, над нижней навигацией */
   .day-pop{width:100%;max-width:100%;top:52px;bottom:60px;border-left:none}
@@ -827,15 +856,14 @@ select.mi{-webkit-appearance:none;cursor:pointer}
   }
   .ev-time-small{display:inline !important;font-size:9px}
   .cal-ev{padding:5px 8px;gap:5px}
-  #screen-week .stats-block{margin:0 14px 10px}
-  #screen-week .notes-block{margin:0 14px 14px}
+  #calViewWeek .stats-block{margin:0 14px 10px}
+  #calViewWeek .notes-block{margin:0 14px 14px}
   /* Список задач недели — на весь экран под гридом дней */
-  #screen-week .tasklist-block{margin:0;border-radius:0;border-left:none;border-right:none;border-top:1px solid var(--b1)}
+  #calViewWeek .tasklist-block{margin:0;border-radius:0;border-left:none;border-right:none;border-top:1px solid var(--b1)}
   /* Заголовок недели с счётчиком задач — уменьшаем */
   #weekHeading{font-size:12px !important}
 
-  /* ── MONTH ── */
-  #screen-month,#screen-month.active{flex-direction:column;overflow-y:auto}
+  /* ── MONTH (внутри объединённого экрана) ── */
   .month-left{flex:none;border-right:none;overflow-y:visible;padding:12px}
   .mday{min-height:48px;padding:3px}
   .mday-n{font-size:10px}
@@ -1303,8 +1331,7 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
     <div class="topbar-info"><div class="topbar-title">ЛИДТЕКА</div><div class="topbar-sub">Мастер-план</div></div>
   </div>
   <div class="topbar-nav">
-    <div class="tnav active" onclick="goTo('week')">📅 Неделя</div>
-    <div class="tnav" onclick="goTo('month')">🗓 Месяц</div>
+    <div class="tnav active" onclick="goTo('week')">📅 Календарь</div>
     <div class="tnav" onclick="goTo('focus')">⭐ Цели и Фокус</div>
     <div class="tnav" onclick="goTo('clients')">💼 Клиенты</div>
     <div class="tnav" onclick="goTo('habits')">🏆 Привычки</div>
@@ -1424,106 +1451,118 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
 
 <!-- WEEK -->
 <div class="screen active" id="screen-week">
-  <div class="week-left">
-    <div class="week-scroll">
-      <div class="week-toolbar">
-        <div style="display:flex;align-items:center;gap:6px">
-          <button class="mnav" onclick="chWeek(-1)">←</button>
-          <div class="screen-heading" id="weekHeading">Неделя</div>
-          <button class="mnav" onclick="chWeek(1)">→</button>
-        </div>
-        <button class="add-btn" onclick="openCalAdd(null,null)">+ Добавить задачу</button>
-      </div>
-      <div class="week-grid" id="weekGrid"></div>
-    </div><!-- /week-scroll -->
-    <div class="stats-block" id="weekStatsBlock">
-      <div class="stats-block-head">
-        <div class="stats-block-title">Продуктивность недели</div>
-        <div class="stats-chips" id="weekStatsChips"></div>
-      </div>
-      <div class="bar-chart-wrap" id="weekStatsChart"></div>
-    </div>
-    <div class="notes-block">
-      <div class="notes-block-head">
-        <div class="notes-block-title" id="weekNotesTitle">Заметки на неделю</div>
-        <div class="notes-saved" id="weekNotesSaved">сохранено ✓</div>
-      </div>
-      <textarea class="notes-ta" id="weekNotesTA" placeholder="Свободные мысли, цели, идеи на эту неделю..." oninput="saveWeekNote(this.value)"></textarea>
-    </div>
-    <div class="tasklist-block">
-      <div class="tasklist-head">
-        <div class="tasklist-title">Список задач недели</div>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end">
-          <div class="tl-filters">
-            <button class="tl-filter-chip active" onclick="setTlFilter('all',this)">Все</button>
-            <button class="tl-filter-chip" onclick="setTlFilter('active',this)">Активные</button>
-            <button class="tl-filter-chip" onclick="setTlFilter('done',this)">Выполнены</button>
+  <!-- Переключатель Неделя / Месяц -->
+  <div class="cal-view-switcher">
+    <button class="cvs-btn active" id="cvsWeekBtn" onclick="switchCalView('week')">📅 Неделя</button>
+    <button class="cvs-btn" id="cvsMonthBtn" onclick="switchCalView('month')">🗓 Месяц</button>
+  </div>
+
+  <!-- ВИД: НЕДЕЛЯ -->
+  <div id="calViewWeek">
+    <div class="week-left">
+      <div class="week-scroll">
+        <div class="week-toolbar">
+          <div style="display:flex;align-items:center;gap:6px">
+            <button class="mnav" onclick="chWeek(-1)">←</button>
+            <div class="screen-heading" id="weekHeading">Неделя</div>
+            <button class="mnav" onclick="chWeek(1)">→</button>
           </div>
-          <button class="add-btn" style="font-size:10px;padding:5px 12px" onclick="openCalAdd(null,null)">+ Добавить задачу</button>
+          <button class="add-btn" onclick="openCalAdd(null,null)">+ Добавить задачу</button>
         </div>
+        <div class="week-grid" id="weekGrid"></div>
+      </div><!-- /week-scroll -->
+      <div class="stats-block" id="weekStatsBlock">
+        <div class="stats-block-head">
+          <div class="stats-block-title">Продуктивность недели</div>
+          <div class="stats-chips" id="weekStatsChips"></div>
+        </div>
+        <div class="bar-chart-wrap" id="weekStatsChart"></div>
       </div>
-      <div id="weekTaskList"></div>
+      <div class="notes-block">
+        <div class="notes-block-head">
+          <div class="notes-block-title" id="weekNotesTitle">Заметки на неделю</div>
+          <div class="notes-saved" id="weekNotesSaved">сохранено ✓</div>
+        </div>
+        <textarea class="notes-ta" id="weekNotesTA" placeholder="Свободные мысли, цели, идеи на эту неделю..." oninput="saveWeekNote(this.value)"></textarea>
+      </div>
+      <div class="tasklist-block">
+        <div class="tasklist-head">
+          <div class="tasklist-title">Список задач недели</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+            <div class="tl-filters">
+              <button class="tl-filter-chip active" onclick="setTlFilter('all',this)">Все</button>
+              <button class="tl-filter-chip" onclick="setTlFilter('active',this)">Активные</button>
+              <button class="tl-filter-chip" onclick="setTlFilter('done',this)">Выполнены</button>
+            </div>
+            <button class="add-btn" style="font-size:10px;padding:5px 12px" onclick="openCalAdd(null,null)">+ Добавить задачу</button>
+          </div>
+        </div>
+        <div id="weekTaskList"></div>
+      </div>
+    </div>
+    <div class="day-pop-backdrop" id="weekPopBackdrop" onclick="closeWeekPanel()"></div>
+    <div class="week-right day-pop" id="weekRight">
+      <div class="day-pop-head">
+        <div class="month-right-title" id="wrTitle">Выберите день</div>
+        <button class="day-pop-x" onclick="closeWeekPanel()" aria-label="Закрыть">×</button>
+      </div>
+      <div id="wrList"></div>
     </div>
   </div>
-  <div class="day-pop-backdrop" id="weekPopBackdrop" onclick="closeWeekPanel()"></div>
-  <div class="week-right day-pop" id="weekRight">
-    <div class="day-pop-head">
-      <div class="month-right-title" id="wrTitle">Выберите день</div>
-      <button class="day-pop-x" onclick="closeWeekPanel()" aria-label="Закрыть">×</button>
+
+  <!-- ВИД: МЕСЯЦ -->
+  <div id="calViewMonth" class="cal-view-hidden">
+    <div class="month-left">
+      <div class="month-header">
+        <div class="screen-heading" id="mTitle"></div>
+        <div class="month-navs">
+          <button class="mnav" onclick="chMonth(-1)">←</button>
+          <button class="mnav" onclick="chMonth(1)">→</button>
+        </div>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+      <div class="stats-block" id="monthStatsBlock">
+        <div class="stats-block-head">
+          <div class="stats-block-title">Продуктивность месяца</div>
+          <div class="stats-chips" id="monthStatsChips"></div>
+        </div>
+        <div class="bar-chart-wrap-m" id="monthStatsChart"></div>
+      </div>
+      <div class="notes-block">
+        <div class="notes-block-head">
+          <div class="notes-block-title" id="monthNotesTitle">Заметки на месяц</div>
+          <div class="notes-saved" id="monthNotesSaved">сохранено ✓</div>
+        </div>
+        <textarea class="notes-ta" id="monthNotesTA" placeholder="Итоги, планы, размышления по месяцу..." oninput="saveMonthNote(this.value)"></textarea>
+      </div>
+      <div class="tasklist-block">
+        <div class="tasklist-head">
+          <div class="tasklist-title" id="monthTaskListTitle">Список задач месяца</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+            <div class="tl-filters">
+              <button class="tl-filter-chip mtl active" onclick="setMtlFilter('all',this)">Все</button>
+              <button class="tl-filter-chip mtl" onclick="setMtlFilter('active',this)">Активные</button>
+              <button class="tl-filter-chip mtl" onclick="setMtlFilter('done',this)">Выполнены</button>
+            </div>
+            <button class="add-btn" style="font-size:10px;padding:5px 12px" onclick="openCalAdd(null,null)">+ Добавить задачу</button>
+          </div>
+        </div>
+        <div id="monthTaskList"></div>
+      </div>
     </div>
-    <div id="wrList"></div>
+    <div class="day-pop-backdrop" id="monthPopBackdrop" onclick="closeMonthPanel()"></div>
+    <div class="month-right day-pop" id="monthRight">
+      <div class="day-pop-head">
+        <div class="month-right-title" id="mrTitle">Выберите день</div>
+        <button class="day-pop-x" onclick="closeMonthPanel()" aria-label="Закрыть">×</button>
+      </div>
+      <div id="mrList"></div>
+    </div>
   </div>
 </div>
 
-<!-- MONTH -->
-<div class="screen" id="screen-month">
-  <div class="month-left">
-    <div class="month-header">
-      <div class="screen-heading" id="mTitle"></div>
-      <div class="month-navs">
-        <button class="mnav" onclick="chMonth(-1)">←</button>
-        <button class="mnav" onclick="chMonth(1)">→</button>
-      </div>
-    </div>
-    <div class="cal-grid" id="calGrid"></div>
-    <div class="stats-block" id="monthStatsBlock">
-      <div class="stats-block-head">
-        <div class="stats-block-title">Продуктивность месяца</div>
-        <div class="stats-chips" id="monthStatsChips"></div>
-      </div>
-      <div class="bar-chart-wrap-m" id="monthStatsChart"></div>
-    </div>
-    <div class="notes-block">
-      <div class="notes-block-head">
-        <div class="notes-block-title" id="monthNotesTitle">Заметки на месяц</div>
-        <div class="notes-saved" id="monthNotesSaved">сохранено ✓</div>
-      </div>
-      <textarea class="notes-ta" id="monthNotesTA" placeholder="Итоги, планы, размышления по месяцу..." oninput="saveMonthNote(this.value)"></textarea>
-    </div>
-    <div class="tasklist-block">
-      <div class="tasklist-head">
-        <div class="tasklist-title" id="monthTaskListTitle">Список задач месяца</div>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end">
-          <div class="tl-filters">
-            <button class="tl-filter-chip mtl active" onclick="setMtlFilter('all',this)">Все</button>
-            <button class="tl-filter-chip mtl" onclick="setMtlFilter('active',this)">Активные</button>
-            <button class="tl-filter-chip mtl" onclick="setMtlFilter('done',this)">Выполнены</button>
-          </div>
-          <button class="add-btn" style="font-size:10px;padding:5px 12px" onclick="openCalAdd(null,null)">+ Добавить задачу</button>
-        </div>
-      </div>
-      <div id="monthTaskList"></div>
-    </div>
-  </div>
-  <div class="day-pop-backdrop" id="monthPopBackdrop" onclick="closeMonthPanel()"></div>
-  <div class="month-right day-pop" id="monthRight">
-    <div class="day-pop-head">
-      <div class="month-right-title" id="mrTitle">Выберите день</div>
-      <button class="day-pop-x" onclick="closeMonthPanel()" aria-label="Закрыть">×</button>
-    </div>
-    <div id="mrList"></div>
-  </div>
-</div>
+<!-- MONTH stub (для обратной совместимости goTo) -->
+<div class="screen" id="screen-month" style="display:none!important"></div>
 
 <!-- FOCUS -->
 <div class="screen" id="screen-focus">
@@ -2049,7 +2088,7 @@ function setDayStatus(dk,key){
   if(dayStatuses[dk]===key)delete dayStatuses[dk];else dayStatuses[dk]=key;
   saveDayStatuses();
   if(document.getElementById('screen-week').classList.contains('active'))renderWeek();
-  if(document.getElementById('screen-month').classList.contains('active'))renderMonth();
+  if(calView==='month')renderMonth();
 }
 function dayStatusBar(dk){
   const cur=dayStatuses[dk]||'';
@@ -2068,7 +2107,7 @@ function weekLabel(mon){const d2=new Date(mon);d2.setDate(d2.getDate()+6);const 
 const TYPE_LABELS={'ev-avito':'Авито','ev-ii':'ИИ','ev-blog':'Блог','ev-land':'Участок','ev-ritual':'Ритуал','ev-intel':'Насмотр','ev-rest':'Отдых','ev-eve':'Личное','ev-custom':'Другое','ev-client':'Клиент'};
 function chWeek(dir){curWeek=getMonday(new Date(curWeek));curWeek.setDate(curWeek.getDate()+dir*7);renderWeek();}
 function loadWeekNote(){const ta=document.getElementById('weekNotesTA');if(!ta)return;ta.value=localStorage.getItem('weekNote_'+weekKey(curWeek))||'';}
-function toggleMEvDone(key,id){const e=(mevs[key]||[]).find(x=>x.id===id);if(!e)return;e.done=!e.done;saveCalLS();renderWeek();if(document.getElementById('screen-month').classList.contains('active'))renderMonth();}
+function toggleMEvDone(key,id){const e=(mevs[key]||[]).find(x=>x.id===id);if(!e)return;e.done=!e.done;saveCalLS();renderWeek();if(calView==='month')renderMonth();}
 let curWeek=getMonday(new Date());
 
 // Modal state
@@ -2081,28 +2120,48 @@ let openClientId=null;
 // ═══════════════════════════════════════════════════════════════════
 // NAVIGATION
 // ═══════════════════════════════════════════════════════════════════
+// Текущий вид календаря: 'week' или 'month'
+let calView='week';
+
+function switchCalView(v){
+  calView=v;
+  const wv=document.getElementById('calViewWeek');
+  const mv=document.getElementById('calViewMonth');
+  wv.classList.toggle('cal-view-hidden',v!=='week');
+  mv.classList.toggle('cal-view-hidden',v!=='month');
+  document.getElementById('cvsWeekBtn').classList.toggle('active',v==='week');
+  document.getElementById('cvsMonthBtn').classList.toggle('active',v==='month');
+  const tt=document.querySelector('.topbar-title');
+  if(tt&&window.innerWidth<=768)tt.textContent=v==='week'?'Неделя':'Месяц';
+  if(v==='week')renderWeek();
+  if(v==='month')renderMonth();
+}
+
 function goTo(s,focusId){
   if(typeof closeWeekPanel==='function')closeWeekPanel();
   if(typeof closeMonthPanel==='function')closeMonthPanel();
-  if(s==='goals')s='focus'; // goals merged into focus
+  if(s==='goals')s='focus';
+  // Месяц теперь внутри экрана week
+  if(s==='month'){
+    s='week';
+    // переключимся в вид месяца после того как экран откроется
+    setTimeout(()=>switchCalView('month'),0);
+  }
   document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('.tnav').forEach(x=>x.classList.remove('active'));
   document.getElementById('screen-'+s).classList.add('active');
-  const tabs=['week','month','focus','clients','habits','notes','bytovka','finance'];
-  const tabNames=['Неделя','Месяц','Цели и Фокус','Клиенты','Привычки','Блокнот','Бытовка','Финансы'];
+  const tabs=['week','focus','clients','habits','notes','bytovka','finance'];
+  const tabNames=['Календарь','Цели и Фокус','Клиенты','Привычки','Блокнот','Бытовка','Финансы'];
   const ti=tabs.indexOf(s);
   if(ti>=0){
     document.querySelectorAll('.tnav')[ti].classList.add('active');
     document.querySelectorAll('.bnav').forEach((b,i)=>b.classList.toggle('active',i===ti));
-    // Обновляем заголовок топбара на мобиле
     const tt=document.querySelector('.topbar-title');
     if(tt&&window.innerWidth<=768)tt.textContent=tabNames[ti];
   }
-  // close sidebar on mobile
   document.getElementById('sidebar').classList.remove('sb-open');
   document.getElementById('sbBackdrop').classList.remove('show');
   if(s==='week')renderWeek();
-  if(s==='month')renderMonth();
   if(s==='focus'){renderGoals();renderFocusScreen();if(focusId)setTimeout(()=>{const el=document.getElementById('fcard-'+focusId);if(el)el.scrollIntoView({behavior:'smooth'});},100);}
   if(s==='clients')renderClients();
   if(s==='habits')renderHabits();
@@ -2278,12 +2337,14 @@ function renderWeekRight(){
     const isWeek=e.day!==undefined;const isCT=e._ctask;
     const chkFn=isWeek?`toggleCalEvDone(${e.id})`:isCT?`toggleClientTaskFromCal(${e._cid},${e.id})`:`toggleMEvDoneWeek('${selWeekDay}',${e.id})`;
     const editFn=isWeek?`openCalEdit(${e.id})`:isCT?`openClientDetail(${e._cid})`:`openCalEditM('${selWeekDay}',${e.id})`;
+    const canDel=!isWeek&&!isCT;
     return`<div class="mrev ${e.cl}${e.done?' ev-done':''}">
       <span class="mrev-chk" onclick="${chkFn}">${e.done?'✓':'○'}</span>
       <span class="mrev-time">${e.t}</span>
       <div class="mrev-dot" style="background:${cmap[e.cl]||'#3b82f6'}"></div>
       <span class="mrev-tx" onclick="${editFn}" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer">${e.tx}</span>
       ${priorityBadge(e)}
+      <button class="mrev-del" title="Удалить" ${canDel?`onclick="delMEvWeek('${selWeekDay}',${e.id})"`:''} style="${canDel?'':'visibility:hidden'}">✕</button>
     </div>`;
   }).join(''):'<div class="no-evs">Нет задач</div>';
   l.innerHTML=dayStatusBar(selWeekDay)+evHtml+`<div class="add-month-btn" onclick="openCalAdd(null,'${selWeekDay}')">＋ Добавить задачу</div>`;
@@ -2291,6 +2352,19 @@ function renderWeekRight(){
 function toggleMEvDoneWeek(key,id){
   const e=(mevs[key]||[]).find(x=>x.id===id);if(!e)return;
   e.done=!e.done;saveCalLS();renderWeek();
+}
+function delMEvWeek(key,id){
+  if(!mevs[key])return;
+  mevs[key]=mevs[key].filter(x=>x.id!==id);
+  saveCalLS();renderWeek();renderWeekRight();
+}
+function delMEv(key,id){
+  if(!mevs[key])return;
+  mevs[key]=mevs[key].filter(x=>x.id!==id);
+  saveCalLS();
+  renderWeek();renderWeekRight();
+  if(calView==='month'){renderMonth();renderMRight();renderMonthStats();renderMonthTaskList();}
+  else{renderWeekTaskList();}
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -2356,6 +2430,7 @@ function renderWeekTaskList(){
         const isDraggable=!isCE&&!isCT; // only mevs tasks are draggable
         const chkFn=isCE?`toggleCalEvDone(${e.id})`:isCT?`toggleClientTaskFromCal(${e._cid},${e.id})`:`toggleMEvDone('${dk}',${e.id})`;
         const editFn=isCE?`openCalEdit(${e.id})`:isCT?`openClientDetail(${e._cid})`:`openCalEditM('${dk}',${e.id})`;
+        const delFn=isCE||isCT?'':` onclick="delMEv('${dk}',${e.id})"`;
         const typeLabel=TYPE_LABELS[e.cl]||'Другое';
         const dlTxt=e.deadline?e.deadline.slice(5).replace('-','.'):'';
         return`<div class="tl-row${e.done?' tl-done':''}" ${isDraggable?`draggable="true" ondragstart="tlDragStart(event,${e.id},'${dk}')" ondragend="tlDragEnd(event)"`:''}>
@@ -2365,6 +2440,7 @@ function renderWeekTaskList(){
           <span class="tl-name" onclick="${editFn}">${e.tx}</span>
           <span class="tl-prio">${e.priority?priorityBadge(e):''}</span>
           ${dlTxt?`<span class="tl-dl">до ${dlTxt}</span>`:'<span class="tl-dl"></span>'}
+          <button class="tl-del" title="Удалить"${delFn} style="${isCE||isCT?'visibility:hidden':''}">✕</button>
         </div>`;
       }).join(''):`<div class="tl-empty">${tlFilter==='all'?`нет задач · <span style="cursor:pointer;color:var(--blue)" onclick="openCalAdd(null,'${dk}')">добавить</span>`:tlFilter==='done'?'нет выполненных':'нет активных'}</div>`}
     </div>`;
@@ -2408,7 +2484,7 @@ function mtlDrop(e,tgtKey){
   const [ev]=src.splice(idx,1);
   if(!mevs[tgtKey])mevs[tgtKey]=[];
   mevs[tgtKey].push(ev);
-  saveCalLS();renderMonth();
+  saveCalLS();if(calView==='month')renderMonth();
   mtlDragId=null;mtlDragSrcKey=null;
 }
 
@@ -2444,6 +2520,7 @@ function renderMonthTaskList(){
         const isDraggable=!isCE&&!isCT;
         const chkFn=isCE?`toggleCalEvDone(${e.id})`:isCT?`toggleClientTaskFromCal(${e._cid},${e.id})`:`toggleCalEvDoneM('${dk}',${e.id})`;
         const editFn=isCE?`openCalEdit(${e.id})`:isCT?`openClientDetail(${e._cid})`:`openCalEditM('${dk}',${e.id})`;
+        const delFn=isCE||isCT?'':` onclick="delMEv('${dk}',${e.id})"`;
         const typeLabel=TYPE_LABELS[e.cl]||'Другое';
         const dlTxt=e.deadline?e.deadline.slice(5).replace('-','.'):'';
         return`<div class="tl-row${e.done?' tl-done':''}" ${isDraggable?`draggable="true" ondragstart="mtlDragStart(event,${e.id},'${dk}')" ondragend="mtlDragEnd(event)"`:''}>
@@ -2453,6 +2530,7 @@ function renderMonthTaskList(){
           <span class="tl-name" onclick="${editFn}">${e.tx}</span>
           <span class="tl-prio">${e.priority?priorityBadge(e):''}</span>
           ${dlTxt?`<span class="tl-dl">до ${dlTxt}</span>`:'<span class="tl-dl"></span>'}
+          <button class="tl-del" title="Удалить"${delFn} style="${isCE||isCT?'visibility:hidden':''}">✕</button>
         </div>`;
       }).join(''):`<div class="tl-empty">нет ${mtlFilter==='done'?'выполненных':'активных'}</div>`}
     </div>`;
@@ -2524,12 +2602,14 @@ function renderMRight(){
     const isWeek=e.day!==undefined;const isCT=e._ctask;
     const chkFn=isWeek?`toggleCalEvDone(${e.id})`:isCT?`toggleClientTaskFromCal(${e._cid},${e.id})`:`toggleCalEvDoneM('${selDay.key}',${e.id})`;
     const editFn=isWeek?`openCalEdit(${e.id})`:isCT?`openClientDetail(${e._cid})`:`openCalEditM('${selDay.key}',${e.id})`;
+    const canDel=!isWeek&&!isCT;
     return`<div class="mrev ${e.cl}${e.done?' ev-done':''}">
       <span class="mrev-chk" onclick="${chkFn}">${e.done?'✓':'○'}</span>
       <span class="mrev-time">${e.t}</span>
       <div class="mrev-dot" style="background:${cmap[e.cl]||'#3b82f6'}"></div>
       <span class="mrev-tx" onclick="${editFn}" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer">${e.tx}</span>
       ${priorityBadge(e)}
+      <button class="mrev-del" title="Удалить" ${canDel?`onclick="delMEv('${selDay.key}',${e.id})"`:''} style="${canDel?'':'visibility:hidden'}">✕</button>
     </div>`;
   }).join(''):'<div class="no-evs">Нет задач</div>';
   l.innerHTML=dayStatusBar(selDay.key)+evHtml+`<div class="add-month-btn" onclick="openCalAdd(null,'${selDay.key}')">＋ Добавить задачу</div>`;
@@ -2574,11 +2654,11 @@ function openCalEditM(dk,id){
   document.getElementById('cmPriority').value=e.priority||'';
   document.getElementById('cmDeadline').value=e.deadline||'';
   document.getElementById('cmDel').style.display='block';
-  document.getElementById('cmDel').onclick=()=>{if(mevs[dk])mevs[dk]=mevs[dk].filter(x=>x.id!==id);saveCalLS();closeCalModal();renderWeek();renderMonth();};
+  document.getElementById('cmDel').onclick=()=>{if(mevs[dk])mevs[dk]=mevs[dk].filter(x=>x.id!==id);saveCalLS();closeCalModal();renderWeek();if(calView==='month'){renderMonth();renderMonthStats();renderMonthTaskList();}};
   document.getElementById('calOverlay').classList.add('show');
 }
 function closeCalModal(){document.getElementById('calOverlay').classList.remove('show');}
-function delCalEv(){calEvs=calEvs.filter(e=>e.id!==calEditId);saveCalLS();closeCalModal();renderWeek();renderMonth();}
+function delCalEv(){calEvs=calEvs.filter(e=>e.id!==calEditId);saveCalLS();closeCalModal();renderWeek();if(calView==='month')renderMonth();}
 function saveCalEv(){
   const tx=document.getElementById('cmTxt').value.trim();if(!tx)return;
   const t=document.getElementById('cmTime').value||'10:00';
@@ -2610,7 +2690,7 @@ function saveCalEv(){
     mevs[selectedDate].push({id:nid++,t,tx,cl,priority,deadline});
   }
   saveCalLS();
-  closeCalModal();renderWeek();renderMonth();
+  closeCalModal();renderWeek();if(calView==='month'){renderMonth();renderMonthStats();renderMonthTaskList();}
 }
 document.getElementById('calOverlay').onclick=e=>{if(e.target===e.currentTarget)closeCalModal();};
 
@@ -2622,7 +2702,7 @@ function toggleCalEvDone(id){
   e.done=!e.done;
   saveCalLS();
   renderWeek();
-  if(document.getElementById('screen-month').classList.contains('active')){renderMonth();}
+  if(calView==='month'){renderMonth();}
 }
 function toggleCalEvDoneM(key,id){
   const e=(mevs[key]||[]).find(x=>x.id===id);if(!e)return;
@@ -2636,7 +2716,7 @@ function toggleClientTaskFromCal(cid,tid){
   t.done=!t.done;
   saveClientsLS();
   if(document.getElementById('screen-week').classList.contains('active'))renderWeek();
-  if(document.getElementById('screen-month').classList.contains('active')){renderMonth();renderMRight();renderMonthStats();renderMonthTaskList();}
+  if(calView==='month'){renderMonth();renderMRight();renderMonthStats();renderMonthTaskList();}
 }
 
 function renderWeekStats(){
@@ -4069,10 +4149,7 @@ renderSidebar();
 <nav class="bottom-nav" id="bottomNav">
   <div class="bnav active" onclick="goTo('week')"><div class="bnav-icon">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-  </div><span>Неделя</span></div>
-  <div class="bnav" onclick="goTo('month')"><div class="bnav-icon">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><rect x="7" y="14" width="3" height="3" rx=".5"/></svg>
-  </div><span>Месяц</span></div>
+  </div><span>Календарь</span></div>
   <div class="bnav" onclick="goTo('focus')"><div class="bnav-icon">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
   </div><span>Цели</span></div>
