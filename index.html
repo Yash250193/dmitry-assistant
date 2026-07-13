@@ -1549,7 +1549,7 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
     </div>
   </div>
   <!-- Pane: Подписки -->
-  <div id="paneSubs" style="display:none;flex:1;overflow-y:auto;padding:20px">
+  <div id="paneSubs" style="display:none;overflow-y:auto;padding:20px;flex:1">
     <div class="byt-toolbar">
       <div class="screen-heading">Подписки</div>
       <button class="add-btn" onclick="openBytModal(null)">+ Добавить</button>
@@ -3889,7 +3889,8 @@ function nbFmtFull(iso){return new Date(iso).toLocaleString('ru',{day:'numeric',
 
 function switchPersonalTab(tab){
   document.getElementById('paneNotes').style.display=tab==='notes'?'flex':'none';
-  document.getElementById('paneSubs').style.display=tab==='subs'?'flex':'none';
+  const ps=document.getElementById('paneSubs');
+  ps.style.display=tab==='subs'?'block':'none';
   document.getElementById('ptabNotes').classList.toggle('active',tab==='notes');
   document.getElementById('ptabSubs').classList.toggle('active',tab==='subs');
   if(tab==='subs')renderBytovka();
