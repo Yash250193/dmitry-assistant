@@ -1862,6 +1862,10 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
       </div>
       <div class="mf"><div class="ml">Дедлайн</div><input class="mi" id="cmDeadline" type="date"></div>
     </div>
+    <div class="mf" id="cmClientRow" style="display:none">
+      <div class="ml">Клиент <span style="font-size:9px;color:var(--t3);font-weight:400">(необяз.)</span></div>
+      <select class="mi" id="cmClient" onchange="onCmClientChange()"></select>
+    </div>
     <div class="modal-btns">
       <button class="mbtn danger" id="cmDel" onclick="delCalEv()" style="display:none">Удалить</button>
       <button class="mbtn secondary" onclick="closeCalModal()">Отмена</button>
@@ -2278,9 +2282,11 @@ function getETById(id){return etDefs.find(x=>x.id===id);}
 function getETColor(id){const t=getETById(id);return t?t.color:'#3B82F6';}
 function getETLabel(id){const t=getETById(id);return t?t.label:'Другое';}
 
-function populateCmType(selectedVal){
+function populateCmType(selectedVal,clientId){
   const sel=document.getElementById('cmType');if(!sel)return;
   sel.innerHTML=etDefs.map(t=>`<option value="${t.id}"${t.id===selectedVal?' selected':''}>${t.label}</option>`).join('');
+  if(!sel.onchange)sel.onchange=onCmTypeChange;
+  updateCmClientRow(selectedVal,clientId);
 }
 
 // ET Manager
@@ -2302,7 +2308,7 @@ function renderETManager(){
       <div class="sett-item-dot" style="background:${t.color}"></div>
       <div class="sett-item-label">${t.label}</div>
       <button class="sett-item-btn" onclick="editETItem('${t.id}')">✏ Изм.</button>
-      ${t.builtin?'<button class="sett-item-btn del" onclick="resetETItem(\''+t.id+'\')" title="Сбросить">↺</button>':'<button class="sett-item-btn del" onclick="deleteETItem(\''+t.id+'\')">✕</button>'}
+      ${t.id==='ev-avito'?'<span style="font-size:10px;color:var(--t3);padding:0 6px">🔒 системный</span>':t.builtin?'<button class="sett-item-btn del" onclick="resetETItem(\''+t.id+'\')" title="Сбросить">↺</button>':'<button class="sett-item-btn del" onclick="deleteETItem(\''+t.id+'\')">✕</button>'}
     </div>`).join('');
 }
 function editETItem(id){
@@ -2658,6 +2664,24 @@ function renderDayTimeGrid(dateKey,evs,chkFnOf,editFnOf,delFnOf,canDelOf,addDate
 </div>`;
 }
 
+// ── Calendar modal: client row for Avito tasks ────────────────────────────────
+function populateCmClient(selectedId){
+  const sel=document.getElementById('cmClient');if(!sel)return;
+  sel.innerHTML='<option value="">— без клиента —</option>'+
+    clients.map(cl=>`<option value="${cl.id}"${String(cl.id)===String(selectedId)?' selected':''}>${cl.name}</option>`).join('');
+}
+function updateCmClientRow(typeVal,clientId){
+  const row=document.getElementById('cmClientRow');if(!row)return;
+  const show=typeVal==='ev-avito';
+  row.style.display=show?'':'none';
+  if(show)populateCmClient(clientId||'');
+}
+function onCmTypeChange(){
+  const v=document.getElementById('cmType').value;
+  updateCmClientRow(v,'');
+}
+function onCmClientChange(){}// placeholder for future use
+
 function renderWeekRight(){
   const t=document.getElementById('wrTitle'),l=document.getElementById('wrList');
   if(!t||!l)return;
@@ -2971,7 +2995,7 @@ function openCalAdd(day,dateKey){
   const isNoDate=dateKey==='no-date';
   document.getElementById('cmDate').value=isNoDate?'':(dateKey||dateKeyFromDate(new Date()));
   document.getElementById('cmDateLabel').textContent=isNoDate?'Дата (необяз.)':'Дата';
-  populateCmType('ev-custom');
+  populateCmType('ev-custom','');
   document.getElementById('cmPriority').value='';
   document.getElementById('cmDeadline').value='';
   document.getElementById('cmDel').style.display='none';
@@ -2986,7 +3010,7 @@ function openCalEdit(id){
   document.getElementById('cmEndTime').value=e.endTime||'';
   const evDate=new Date(curWeek);evDate.setDate(evDate.getDate()+e.day);
   document.getElementById('cmDate').value=dateKeyFromDate(evDate);
-  populateCmType(e.cl);
+  populateCmType(e.cl,e.clientId||'');
   document.getElementById('cmPriority').value=e.priority||'';
   document.getElementById('cmDeadline').value=e.deadline||'';
   document.getElementById('cmDel').style.display='block';
@@ -3002,7 +3026,7 @@ function openCalEditM(dk,id){
   const isNoDate=dk==='no-date';
   document.getElementById('cmDate').value=isNoDate?'':dk;
   document.getElementById('cmDateLabel').textContent=isNoDate?'Дата (необяз.)':'Дата';
-  populateCmType(e.cl||'ev-custom');
+  populateCmType(e.cl||'ev-custom',e.clientId||'');
   document.getElementById('cmPriority').value=e.priority||'';
   document.getElementById('cmDeadline').value=e.deadline||'';
   document.getElementById('cmDel').style.display='block';
@@ -3020,31 +3044,44 @@ function saveCalEv(){
   const deadline=document.getElementById('cmDeadline').value||undefined;
   const rawDate=document.getElementById('cmDate').value;
   const selectedDate=rawDate||'no-date';
+  const clientIdRaw=document.getElementById('cmClient').value;
+  const clientId=cl==='ev-avito'&&clientIdRaw?parseInt(clientIdRaw):undefined;
+
   if(calEditId){
-    // Редактируем calEvs событие
     const e=calEvs.find(x=>x.id===calEditId);
     if(e){
-      e.tx=tx;e.t=t;e.endTime=endTime;e.cl=cl;e.priority=priority;e.deadline=deadline;
+      e.tx=tx;e.t=t;e.endTime=endTime;e.cl=cl;e.priority=priority;e.deadline=deadline;e.clientId=clientId;
       const evD=new Date(selectedDate+'T00:00:00');
       const newDi=Math.round((evD-curWeek)/86400000);
       if(newDi>=0&&newDi<7){e.day=newDi;}
-      else{calEvs=calEvs.filter(x=>x.id!==calEditId);if(!mevs[selectedDate])mevs[selectedDate]=[];mevs[selectedDate].push({id:nid++,t,endTime,tx,cl,priority,deadline,done:e.done||false});}
+      else{calEvs=calEvs.filter(x=>x.id!==calEditId);if(!mevs[selectedDate])mevs[selectedDate]=[];mevs[selectedDate].push({id:nid++,t,endTime,tx,cl,priority,deadline,clientId,done:e.done||false});}
     }
   }else if(calEditDateKey&&calEditMEvId!==null){
-    // Редактируем mevs событие — может смениться дата
     const oldArr=mevs[calEditDateKey]||[];
     const oldEv=oldArr.find(x=>x.id===calEditMEvId);
     const done=oldEv?!!oldEv.done:false;
+    const prevClientId=oldEv?oldEv.clientId:undefined;
     mevs[calEditDateKey]=oldArr.filter(x=>x.id!==calEditMEvId);
     if(!mevs[selectedDate])mevs[selectedDate]=[];
-    mevs[selectedDate].push({id:nid++,t,endTime,tx,cl,priority,deadline,done});
+    mevs[selectedDate].push({id:nid++,t,endTime,tx,cl,priority,deadline,clientId,done});
+    // Если клиент изменился — добавляем к новому (дублируем)
+    if(clientId&&clientId!==prevClientId){
+      dupTaskToClient(clientId,tx,priority,selectedDate!=='no-date'?selectedDate:undefined);
+    }
   }else{
     // Новое событие
     if(!mevs[selectedDate])mevs[selectedDate]=[];
-    mevs[selectedDate].push({id:nid++,t,endTime,tx,cl,priority,deadline});
+    mevs[selectedDate].push({id:nid++,t,endTime,tx,cl,priority,deadline,clientId});
+    if(clientId)dupTaskToClient(clientId,tx,priority,selectedDate!=='no-date'?selectedDate:undefined);
   }
   saveCalLS();
   closeCalModal();renderWeek();if(calView==='month'){renderMonth();renderMonthStats();renderMonthTaskList();}
+}
+function dupTaskToClient(clientId,text,priority,deadline){
+  const cl=clients.find(c=>c.id===clientId);if(!cl)return;
+  if(!cl.tasks)cl.tasks=[];
+  cl.tasks.push({id:nid++,text,done:false,priority,deadline});
+  saveClientsLS();
 }
 document.getElementById('calOverlay').onclick=e=>{if(e.target===e.currentTarget)closeCalModal();};
 
@@ -3557,6 +3594,8 @@ function saveClient(){
   }
   saveClientsLS();
   renderClients();
+  const clientRow=document.getElementById('cmClientRow');
+  if(clientRow&&clientRow.style.display!=='none'){populateCmClient(document.getElementById('cmClient').value);}
 }
 document.getElementById('clientOverlay').onclick=e=>{if(e.target===e.currentTarget)closeClientModal();};
 
