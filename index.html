@@ -165,30 +165,30 @@ body{background:var(--bg);color:var(--t1);font-family:'Onest',sans-serif;font-si
 .day-pop-x{background:var(--s2);border:1px solid var(--b2);border-radius:8px;width:30px;height:30px;font-size:20px;line-height:1;color:var(--t2);cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s;padding:0}
 .day-pop-x:hover{border-color:var(--coral);color:var(--coral)}
 #wrList,#mrList{padding:0;overflow-y:auto;flex:1}
-/* ── Day time-grid (Google Calendar style) ── */
-.day-tgrid{position:relative;padding:0 14px 20px}
-.day-tg-actions{display:flex;align-items:center;justify-content:space-between;padding:8px 14px 6px;flex-shrink:0;border-bottom:1px solid var(--b1)}
-.day-tg-addBtn{font-size:11px;color:var(--blue);background:none;border:none;cursor:pointer;font-family:'Onest',sans-serif;padding:4px 8px;border-radius:6px;transition:background .15s}
-.day-tg-addBtn:hover{background:var(--blue3)}
-.day-tg-row{display:flex;gap:0;min-height:48px;position:relative}
-.day-tg-row:not(:last-child){border-bottom:1px solid var(--b1)}
-.day-tg-hour{width:42px;flex-shrink:0;font-size:9px;color:var(--t3);padding:4px 6px 0 0;text-align:right;font-family:'Onest',sans-serif;position:relative;top:-7px}
-.day-tg-col{flex:1;position:relative;min-height:48px}
+/* ── Day time-grid ── */
+.day-tg-header{padding:8px 14px 0;flex-shrink:0}
+.day-tg-addbar{display:flex;justify-content:flex-end;padding:6px 14px 8px;border-bottom:1px solid var(--b1)}
+.day-tg-addBtn{font-size:11px;color:var(--magenta);background:none;border:1px dashed var(--b2);cursor:pointer;font-family:'Onest',sans-serif;padding:5px 12px;border-radius:8px;transition:all .15s}
+.day-tg-addBtn:hover{border-color:var(--magenta);background:rgba(196,48,106,.05)}
+/* Two-column grid: time labels | events */
+.day-tgrid{display:flex;flex-direction:row;padding:8px 8px 20px 0}
+.day-tg-times{width:44px;flex-shrink:0;position:relative}
+.day-tg-time-label{position:absolute;right:8px;font-size:9px;color:var(--t3);font-family:'Onest',sans-serif;transform:translateY(-50%);white-space:nowrap;line-height:1}
+.day-tg-events{flex:1;position:relative}
+.day-tg-hline{position:absolute;left:0;right:0;border-top:1px solid var(--b1)}
+.day-tg-hline-half{position:absolute;left:0;right:0;border-top:1px dashed rgba(128,128,128,.2)}
 /* Event block */
-.day-tg-ev{position:absolute;left:2px;right:2px;border-radius:6px;padding:4px 7px;font-size:10px;line-height:1.3;cursor:pointer;overflow:hidden;transition:opacity .15s;z-index:2;border-left:3px solid rgba(0,0,0,.2)}
-.day-tg-ev:hover{opacity:.85}
-.day-tg-ev.ev-done{opacity:.45}
+.day-tg-ev{position:absolute;border-radius:7px;padding:5px 8px;font-size:10px;line-height:1.35;cursor:pointer;overflow:hidden;transition:opacity .15s;z-index:2;border-left:3px solid currentColor}
+.day-tg-ev:hover{opacity:.88}
+.day-tg-ev.ev-done{opacity:.4}
 .day-tg-ev.ev-done .day-tg-ev-title{text-decoration:line-through}
-.day-tg-ev-title{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.day-tg-ev-time{font-size:8.5px;opacity:.75;margin-top:1px}
-.day-tg-ev-actions{display:flex;gap:4px;margin-top:3px}
-.day-tg-ev-btn{background:rgba(255,255,255,.18);border:none;border-radius:4px;font-size:9px;color:inherit;cursor:pointer;padding:1px 5px;font-family:'Onest',sans-serif;transition:opacity .15s}
-.day-tg-ev-btn:hover{opacity:.7}
-/* Pinned tasks (no time range or < 30min): compact list below grid */
-.day-tg-pinned{padding:10px 14px 4px;border-top:1px solid var(--b1)}
-.day-tg-pinned-title{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.day-tg-ev-title{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.day-tg-ev-time{font-size:8.5px;opacity:.7;margin-top:2px}
+.day-tg-ev-actions{display:flex;gap:4px;margin-top:4px}
+.day-tg-ev-btn{background:rgba(255,255,255,.22);border:none;border-radius:4px;font-size:9px;color:inherit;cursor:pointer;padding:2px 6px;font-family:'Onest',sans-serif}
+.day-tg-ev-btn:hover{opacity:.75}
 /* current time line */
-.day-tg-now{position:absolute;left:44px;right:4px;height:2px;background:var(--coral);z-index:5;pointer-events:none}
+.day-tg-now{position:absolute;left:0;right:0;height:2px;background:var(--coral);z-index:5;pointer-events:none}
 .day-tg-now::before{content:'';position:absolute;left:-4px;top:-4px;width:10px;height:10px;border-radius:50%;background:var(--coral)}
 .day-pop-backdrop{display:none;position:fixed;inset:0;background:rgba(26,26,46,.35);z-index:55}
 .day-pop-backdrop.show{display:block}
@@ -2584,73 +2584,77 @@ function openWeekPanel(){const p=document.getElementById('weekRight'),b=document
 function closeWeekPanel(){const p=document.getElementById('weekRight'),b=document.getElementById('weekPopBackdrop');if(p)p.classList.remove('open');if(b)b.classList.remove('show');}
 // ── Helpers for time-grid ────────────────────────────────────────────────────
 function timeToMin(s){if(!s)return null;const[h,m]=(s||'').split(':').map(Number);return isNaN(h)?null:h*60+(m||0);}
-function minToTime(m){return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');}
 function renderDayTimeGrid(dateKey,evs,chkFnOf,editFnOf,delFnOf,canDelOf,addDateKey){
-  // Sort by start time
-  const sorted=[...evs].sort((a,b)=>(timeToMin(a.t)||0)-(timeToMin(b.t)||0));
-  // Decide grid range: min start hour → max end hour, min 7:00–22:00
-  let minH=7,maxH=22;
-  sorted.forEach(e=>{
-    const s=timeToMin(e.t);const en=timeToMin(e.endTime);
-    if(s!==null){minH=Math.min(minH,Math.floor(s/60));}
-    if(en!==null){maxH=Math.max(maxH,Math.ceil(en/60));}
-    else if(s!==null){maxH=Math.max(maxH,Math.ceil((s+60)/60));}
+  const PX_HR=64; // px per hour
+  const PX_MIN=PX_HR/60;
+  // Determine visible range
+  let minH=8,maxH=20;
+  evs.forEach(e=>{
+    const s=timeToMin(e.t);
+    const en=timeToMin(e.endTime)||(s!==null?s+60:null);
+    if(s!==null){minH=Math.min(minH,Math.floor(s/60));maxH=Math.max(maxH,Math.ceil((en||s+60)/60));}
   });
   minH=Math.max(0,minH-1);maxH=Math.min(24,maxH+1);
-  const PX_PER_MIN=1.6; // px per minute (48px per 30min = 96px/hr)
-  const HR_H=PX_PER_MIN*60;
-  const totalH=(maxH-minH)*HR_H;
-  // Current time line
+  const totalH=(maxH-minH)*PX_HR;
+  // Current time
   const now=new Date();const nowMin=now.getHours()*60+now.getMinutes();
-  const todayKey=dateKeyFromDate(now);
-  const showNow=dateKey===todayKey&&nowMin>=minH*60&&nowMin<=maxH*60;
-  const nowTop=((nowMin-minH*60)*PX_PER_MIN).toFixed(1);
-  // Hour grid lines HTML
-  let hoursHtml='';
-  for(let h=minH;h<maxH;h++){
-    const top=((h-minH)*HR_H).toFixed(1);
-    hoursHtml+=`<div style="position:absolute;top:${top}px;left:42px;right:0;height:${HR_H}px;border-top:1px solid var(--b1)"></div>
-    <div style="position:absolute;top:${(parseFloat(top)+HR_H/2).toFixed(1)}px;left:42px;right:0;border-top:1px dashed var(--b1);opacity:.4"></div>
-    <div style="position:absolute;top:${top}px;left:0;width:38px;font-size:9px;color:var(--t3);text-align:right;padding-right:6px;font-family:'Onest',sans-serif;line-height:1;transform:translateY(-6px)">${String(h).padStart(2,'0')}:00</div>`;
+  const showNow=dateKey===dateKeyFromDate(now)&&nowMin>=minH*60&&nowMin<=maxH*60;
+  const nowTop=((nowMin-minH*60)*PX_MIN).toFixed(1);
+  // Time labels column
+  let timesHtml='';
+  for(let h=minH;h<=maxH;h++){
+    const top=((h-minH)*PX_HR).toFixed(1);
+    timesHtml+=`<div class="day-tg-time-label" style="top:${top}px">${String(h).padStart(2,'0')}:00</div>`;
   }
-  // Lay out events to handle overlaps (simple greedy column assignment)
-  const cols=[];
+  // Hour & half-hour lines in events column
+  let linesHtml='';
+  for(let h=minH;h<maxH;h++){
+    const top=((h-minH)*PX_HR).toFixed(1);
+    const topHalf=((h-minH)*PX_HR+PX_HR/2).toFixed(1);
+    linesHtml+=`<div class="day-tg-hline" style="top:${top}px"></div>
+    <div class="day-tg-hline-half" style="top:${topHalf}px"></div>`;
+  }
+  linesHtml+=`<div class="day-tg-hline" style="top:${totalH}px"></div>`;
+  // Greedy column layout for overlapping events
+  const sorted=[...evs].sort((a,b)=>(timeToMin(a.t)||0)-(timeToMin(b.t)||0));
+  const colEnds=[];
   const layout=sorted.map(e=>{
-    const s=timeToMin(e.t)||minH*60;
-    const en=timeToMin(e.endTime)||(s+60);
-    const colIdx=cols.findIndex(c=>c<=s);
-    const col=colIdx>=0?colIdx:cols.length;
-    cols[col]=en;
+    const s=timeToMin(e.t)??minH*60;
+    const en=timeToMin(e.endTime)??(s+60);
+    let col=colEnds.findIndex(c=>c<=s);
+    if(col<0)col=colEnds.length;
+    colEnds[col]=en;
     return{e,s,en,col};
   });
-  const numCols=cols.length||1;
-  // Events HTML
-  let evHtml='';
+  const numCols=Math.max(1,colEnds.length);
+  // Event blocks HTML
+  let evHtml=linesHtml;
+  if(showNow)evHtml+=`<div class="day-tg-now" style="top:${nowTop}px"></div>`;
   layout.forEach(({e,s,en,col})=>{
-    const top=((s-minH*60)*PX_PER_MIN).toFixed(1);
-    const height=Math.max(((en-s)*PX_PER_MIN),28).toFixed(1);
+    const top=((s-minH*60)*PX_MIN).toFixed(1);
+    const height=Math.max((en-s)*PX_MIN,26).toFixed(1);
+    const colW=100/numCols;
+    const left=(col*colW).toFixed(2)+'%';
+    const width=(colW-1).toFixed(2)+'%';
     const color=getETColor(e.cl);
-    const bg=color+'22';const border=color;const textC=color;
-    const w=`calc((100% - 44px) / ${numCols})`;
-    const left=`calc(44px + ${col} * (100% - 44px) / ${numCols})`;
+    const timeLabel=e.endTime?`${e.t} – ${e.endTime}`:e.t;
+    const tall=parseFloat(height)>=48;
     const chkFn=chkFnOf(e);const editFn=editFnOf(e);const delFn=delFnOf(e);const canDel=canDelOf(e);
-    const timeLabel=e.endTime?`${e.t}–${e.endTime}`:e.t;
-    const shortHeight=parseFloat(height)<38;
-    evHtml+=`<div class="day-tg-ev${e.done?' ev-done':''}" style="top:${top}px;height:${height}px;left:${left};width:${w};background:${bg};color:${textC};border-left-color:${border}" onclick="${editFn}">
+    evHtml+=`<div class="day-tg-ev${e.done?' ev-done':''}" style="top:${top}px;height:${height}px;left:${left};width:${width};background:${color}1e;color:${color};border-left-color:${color}" onclick="${editFn}">
       <div class="day-tg-ev-title">${e.tx}</div>
-      ${!shortHeight?`<div class="day-tg-ev-time">${timeLabel}</div>`:''}
-      ${!shortHeight?`<div class="day-tg-ev-actions" onclick="event.stopPropagation()">
-        <button class="day-tg-ev-btn" onclick="${chkFn}">${e.done?'↩ Снять':'✓ Готово'}</button>
-        ${canDel?`<button class="day-tg-ev-btn" style="color:var(--coral)" onclick="${delFn}">✕</button>`:''}
+      ${tall?`<div class="day-tg-ev-time">${timeLabel}</div>`:''}
+      ${tall?`<div class="day-tg-ev-actions" onclick="event.stopPropagation()">
+        <button class="day-tg-ev-btn" onclick="${chkFn}">${e.done?'↩':'✓ Готово'}</button>
+        ${canDel?`<button class="day-tg-ev-btn" style="opacity:.7" onclick="${delFn}">✕</button>`:''}
       </div>`:''}
     </div>`;
   });
-  return`<div style="padding:8px 14px 6px">${dayStatusBar(addDateKey)}</div>
-<div class="day-tg-actions"><button class="day-tg-addBtn" onclick="openCalAdd(null,'${addDateKey}')">＋ Добавить задачу</button></div>
-<div class="day-tgrid" style="height:${totalH}px;min-height:${totalH}px">
-  ${hoursHtml}
-  ${showNow?`<div class="day-tg-now" style="top:${nowTop}px"></div>`:''}
-  ${evs.length?evHtml:`<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:11px;color:var(--t3)">Нет задач</div>`}
+  if(!evs.length)evHtml+=linesHtml+`<div style="position:absolute;top:40%;width:100%;text-align:center;font-size:11px;color:var(--t3)">Нет задач</div>`;
+  return`<div class="day-tg-header">${dayStatusBar(addDateKey)}</div>
+<div class="day-tg-addbar"><button class="day-tg-addBtn" onclick="openCalAdd(null,'${addDateKey}')">＋ Добавить задачу</button></div>
+<div class="day-tgrid">
+  <div class="day-tg-times" style="height:${totalH+16}px">${timesHtml}</div>
+  <div class="day-tg-events" style="height:${totalH}px">${evHtml}</div>
 </div>`;
 }
 
