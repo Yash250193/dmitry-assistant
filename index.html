@@ -1024,19 +1024,40 @@ select.mi{-webkit-appearance:none;cursor:pointer}
   /* ── ФИНАНСЫ mobile ── */
   .fin-charts-wrap{grid-template-columns:1fr}
   .fin-tables-row{grid-template-columns:1fr}
+  .fin-sit-section{grid-template-columns:1fr}
   .fin-chips{gap:6px}
   .fin-chip{font-size:10px;padding:5px 10px}
+  /* На тач — кнопки удаления/редактирования всегда видны */
+  .fin-del-btn{opacity:1 !important}
+  .fin-edit-btn{opacity:1 !important}
+  .fin-pay-chip{font-size:8px;padding:2px 6px}
 
-  /* ── БЫТОВКА mobile ── */
+  /* ── БЫТОВКА / Подписки mobile ── */
   .byt-grid{grid-template-columns:1fr}
   .byt-stats{flex-wrap:wrap}
   .byt-stat{min-width:calc(50% - 6px)}
   .byt-toolbar{flex-direction:column;align-items:flex-start}
 
+  /* ── ЛИЧНОЕ — вкладки mobile ── */
+  .personal-tabs{padding:0 8px}
+  .personal-tab{padding:10px 12px;font-size:12px}
+
+  /* ── НАСТРОЙКИ overlay — менеджеры типов mobile ── */
+  .fin-pay-mgr-overlay{padding:12px}
+  .settings-modal{padding:16px;gap:12px}
+
   /* ── CLIENT DETAIL TABS ── */
   .cd-tab{min-height:36px;font-size:11px;padding:5px 14px}
 
   /* ── iOS ZOOM FIX — font-size:16px на всех инпутах ── */
+  /* cmtype-row — select + manage button в модале */
+  .cmtype-row{flex-wrap:nowrap}
+  .cmtype-manage{min-height:44px;min-width:44px;display:flex;align-items:center;justify-content:center}
+
+  /* Ситуативные — кнопки удаления на тач */
+  .fin-entry .fin-del-btn{opacity:1 !important}
+
+  /* iOS ZOOM FIX — font-size:16px на всех инпутах */
   .mi,
   .notes-ta,
   .chat-inp,
@@ -2092,7 +2113,7 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
 <!-- FIN PAY MANAGER -->
 <div class="fin-pay-mgr-overlay" id="finPayMgrOverlay">
   <div class="settings-modal" style="max-width:380px">
-    <div class="sett-modal-title">Типы платежей</div>
+    <div class="settings-modal-title">Типы платежей</div>
     <div id="finPayMgrList"></div>
     <div style="border-top:1px solid var(--b1);padding-top:14px;display:flex;flex-direction:column;gap:8px">
       <input class="mi" id="finPayAddLabel" placeholder="Название типа..." oninput="updateFinPayPreview()">
