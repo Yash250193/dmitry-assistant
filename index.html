@@ -631,6 +631,13 @@ select.mi{-webkit-appearance:none;cursor:pointer}
 .fin-empty{text-align:center;color:var(--t3);font-size:12px;padding:28px 16px;opacity:.7}
 .fin-table-footer{border-top:1px solid var(--b1);padding-top:8px;margin-top:8px;display:flex;justify-content:space-between;font-size:11px;color:var(--t3)}
 .fin-table-footer strong{font-family:'Unbounded',sans-serif;font-size:11px;color:var(--t1)}
+.fin-pay-chip{display:inline-flex;align-items:center;font-size:9px;font-weight:700;padding:2px 8px;border-radius:8px;letter-spacing:.03em;margin-right:4px}
+.fin-del-btn{background:none;border:none;color:var(--coral);cursor:pointer;font-size:12px;padding:2px 5px;opacity:0;transition:opacity .15s;flex-shrink:0;line-height:1}
+.fin-entry:hover .fin-del-btn{opacity:1}
+.fin-sit-section{margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fin-sit-hdr{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);font-family:'Unbounded',sans-serif;margin-bottom:2px}
+.fin-pay-mgr-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1100;display:none;align-items:center;justify-content:center;padding:16px}
+.fin-pay-mgr-overlay.show{display:flex}
 
 .habits-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
 .habits-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
@@ -742,6 +749,10 @@ select.mi{-webkit-appearance:none;cursor:pointer}
 
 /* NOTEBOOK */
 #screen-notes{overflow:hidden}
+.personal-tabs{display:flex;gap:0;border-bottom:2px solid var(--b1);flex-shrink:0;background:var(--s1);padding:0 16px}
+.personal-tab{background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;padding:12px 16px;font-size:13px;font-family:'Onest',sans-serif;color:var(--t3);cursor:pointer;transition:all .15s;font-weight:500}
+.personal-tab.active{color:var(--magenta);border-bottom-color:var(--magenta)}
+.personal-tab:hover:not(.active){color:var(--t1)}
 .nb-toolbar{display:flex;align-items:center;gap:8px;padding:14px 20px;border-bottom:1px solid var(--b1);flex-shrink:0;background:var(--s1)}
 .nb-search{flex:1;background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);padding:7px 12px;color:var(--t1);font-family:'Onest',sans-serif;font-size:12px;outline:none;transition:border-color .2s}
 .nb-search:focus{border-color:var(--blue)}.nb-search::placeholder{color:var(--t3)}
@@ -1389,9 +1400,7 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
     <div class="tnav" onclick="goTo('focus')">⭐ Цели и Фокус</div>
     <div class="tnav" onclick="goTo('clients')">💼 Клиенты</div>
     <div class="tnav" onclick="goTo('habits')">🏆 Привычки</div>
-    <div class="tnav" onclick="goTo('notes')">📓 Блокнот</div>
-
-    <div class="tnav" onclick="goTo('bytovka')">🏠 Бытовка</div>
+    <div class="tnav" onclick="goTo('notes')">📒 Личное</div>
     <div class="tnav" onclick="goTo('finance')">💰 Финансы</div>
   </div>
   <div class="topbar-right" style="display:flex;align-items:center;gap:8px">
@@ -1477,29 +1486,46 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
 
 <!-- NOTES (NOTEBOOK) -->
 <div class="screen" id="screen-notes">
-  <div id="nbListView" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
-    <div class="nb-toolbar">
-      <input class="nb-search" id="nbSearch" placeholder="🔍 Поиск заметок..." oninput="renderNotes()">
-      <div class="nb-vbtn active" id="nbBtnGrid" onclick="setNbView('grid')" title="Сетка">⊞</div>
-      <div class="nb-vbtn" id="nbBtnList" onclick="setNbView('list')" title="Список">≡</div>
-      <button class="add-btn" onclick="openNoteEditor(null)">+ Создать</button>
-    </div>
-    <div class="nb-list" id="nbCards"></div>
+  <!-- Tab bar -->
+  <div class="personal-tabs">
+    <button class="personal-tab active" id="ptabNotes" onclick="switchPersonalTab('notes')">📓 Заметки</button>
+    <button class="personal-tab" id="ptabSubs" onclick="switchPersonalTab('subs')">🏠 Подписки</button>
   </div>
-  <div id="nbEditorView" class="nb-editor">
-    <div class="nb-editor-hdr">
-      <button class="nb-back" onclick="closeNoteEditor()">← Заметки</button>
-      <div class="nb-editor-acts">
-        <button class="nb-act" id="nbPinBtn" onclick="toggleNotePin()">📌 Закрепить</button>
-        <button class="nb-act del" onclick="deleteCurrentNote()">🗑 Удалить</button>
+  <!-- Pane: Заметки -->
+  <div id="paneNotes" style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0">
+    <div id="nbListView" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+      <div class="nb-toolbar">
+        <input class="nb-search" id="nbSearch" placeholder="🔍 Поиск заметок..." oninput="renderNotes()">
+        <div class="nb-vbtn active" id="nbBtnGrid" onclick="setNbView('grid')" title="Сетка">⊞</div>
+        <div class="nb-vbtn" id="nbBtnList" onclick="setNbView('list')" title="Список">≡</div>
+        <button class="add-btn" onclick="openNoteEditor(null)">+ Создать</button>
+      </div>
+      <div class="nb-list" id="nbCards"></div>
+    </div>
+    <div id="nbEditorView" class="nb-editor">
+      <div class="nb-editor-hdr">
+        <button class="nb-back" onclick="closeNoteEditor()">← Заметки</button>
+        <div class="nb-editor-acts">
+          <button class="nb-act" id="nbPinBtn" onclick="toggleNotePin()">📌 Закрепить</button>
+          <button class="nb-act del" onclick="deleteCurrentNote()">🗑 Удалить</button>
+        </div>
+      </div>
+      <input class="nb-title-inp" id="nbTitleInp" placeholder="Заголовок..." oninput="autoSaveNote()">
+      <textarea class="nb-body-ta" id="nbBodyTa" placeholder="Начни писать..." oninput="autoSaveNote()"></textarea>
+      <div class="nb-meta">
+        <span id="nbMetaText">Новая заметка</span>
+        <div class="nc-dots" id="ncDots"></div>
       </div>
     </div>
-    <input class="nb-title-inp" id="nbTitleInp" placeholder="Заголовок..." oninput="autoSaveNote()">
-    <textarea class="nb-body-ta" id="nbBodyTa" placeholder="Начни писать..." oninput="autoSaveNote()"></textarea>
-    <div class="nb-meta">
-      <span id="nbMetaText">Новая заметка</span>
-      <div class="nc-dots" id="ncDots"></div>
+  </div>
+  <!-- Pane: Подписки -->
+  <div id="paneSubs" style="display:none;flex:1;overflow-y:auto;padding:20px">
+    <div class="byt-toolbar">
+      <div class="screen-heading">Подписки</div>
+      <button class="add-btn" onclick="openBytModal(null)">+ Добавить</button>
     </div>
+    <div class="byt-stats" id="bytStats"></div>
+    <div class="byt-grid" id="bytGrid"></div>
   </div>
 </div>
 
@@ -1760,17 +1786,27 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
       <div class="fin-table-footer"><span>Итого</span><strong id="finTotalExp">0 ₽</strong></div>
     </div>
   </div>
+  <div class="fin-sit-section">
+    <div class="fin-table-wrap">
+      <div class="fin-table-hdr">
+        <div><div class="fin-sit-hdr">Ситуативные</div><span class="fin-table-title inc">Доходы</span></div>
+        <button class="add-btn" onclick="openFinSitModal('income',null)">+ Добавить</button>
+      </div>
+      <div id="finSitIncTable"></div>
+      <div class="fin-table-footer"><span>Итого</span><strong id="finSitTotalInc">0 ₽</strong></div>
+    </div>
+    <div class="fin-table-wrap">
+      <div class="fin-table-hdr">
+        <div><div class="fin-sit-hdr">Ситуативные</div><span class="fin-table-title exp">Расходы</span></div>
+        <button class="add-btn" onclick="openFinSitModal('expense',null)">+ Добавить</button>
+      </div>
+      <div id="finSitExpTable"></div>
+      <div class="fin-table-footer"><span>Итого</span><strong id="finSitTotalExp">0 ₽</strong></div>
+    </div>
+  </div>
 </div>
 
 <!-- БЫТОВКА -->
-<div class="screen" id="screen-bytovka">
-  <div class="byt-toolbar">
-    <div class="screen-heading">Бытовка</div>
-    <button class="add-btn" onclick="openBytModal(null)">+ Добавить</button>
-  </div>
-  <div class="byt-stats" id="bytStats"></div>
-  <div class="byt-grid" id="bytGrid"></div>
-</div>
 
 </div><!-- /main -->
 </div><!-- /layout -->
@@ -2034,6 +2070,10 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
       <div class="mf"><div class="ml">Сумма ₽</div><input class="mi" id="finAmount" type="number" min="0" placeholder="0"></div>
       <div class="mf"><div class="ml">Дата (необязательно)</div><input class="mi" id="finDate" type="date"></div>
     </div>
+    <div class="mf cmtype-row"><div class="ml">Тип платежа <span style="font-size:9px;color:var(--t3);font-weight:400">(необяз.)</span></div>
+      <select class="mi" id="finPayType" style="flex:1"></select>
+      <button class="cmtype-manage" onclick="openFinPayManager()">⚙</button>
+    </div>
     <div class="mf"><div class="ml">Статус</div>
       <select class="mi" id="finStatus">
         <option value="">— Без статуса</option>
@@ -2045,6 +2085,52 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
       <button class="mbtn danger" id="finDel" onclick="delFinEntry()" style="display:none">Удалить</button>
       <button class="mbtn secondary" onclick="closeFinModal()">Отмена</button>
       <button class="mbtn primary" onclick="saveFinEntry()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- FIN PAY MANAGER -->
+<div class="fin-pay-mgr-overlay" id="finPayMgrOverlay">
+  <div class="settings-modal" style="max-width:380px">
+    <div class="sett-modal-title">Типы платежей</div>
+    <div id="finPayMgrList"></div>
+    <div style="border-top:1px solid var(--b1);padding-top:14px;display:flex;flex-direction:column;gap:8px">
+      <input class="mi" id="finPayAddLabel" placeholder="Название типа..." oninput="updateFinPayPreview()">
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="color" id="finPayAddColor" value="#3B82F6" oninput="updateFinPayPreview()" style="width:36px;height:32px;border:none;background:none;cursor:pointer;padding:0;border-radius:6px">
+        <div id="finPayPreview" style="padding:3px 10px;border-radius:8px;font-size:11px;font-weight:700;background:#3B82F620;color:#3B82F6">Тип</div>
+        <input type="hidden" id="finPayEditId">
+        <button class="mbtn primary" onclick="saveFinPayItem()" style="margin-left:auto;padding:7px 14px;font-size:12px">Сохранить</button>
+      </div>
+    </div>
+    <button class="mbtn secondary" onclick="closeFinPayManager()" style="width:100%">Закрыть</button>
+  </div>
+</div>
+
+<!-- FIN SIT MODAL -->
+<div class="overlay" id="finSitOverlay">
+  <div class="modal" style="width:440px;max-width:95vw">
+    <div class="modal-title" id="finSitModalTitle">Новый доход</div>
+    <div class="mf"><div class="ml">Название</div><input class="mi" id="finSitName" type="text" placeholder="Описание..."></div>
+    <div class="mi-row">
+      <div class="mf"><div class="ml">Сумма ₽</div><input class="mi" id="finSitAmount" type="number" min="0" placeholder="0"></div>
+      <div class="mf"><div class="ml">Дата (необяз.)</div><input class="mi" id="finSitDate" type="date"></div>
+    </div>
+    <div class="mf cmtype-row"><div class="ml">Тип платежа <span style="font-size:9px;color:var(--t3);font-weight:400">(необяз.)</span></div>
+      <select class="mi" id="finSitPayType" style="flex:1"></select>
+      <button class="cmtype-manage" onclick="openFinPayManager()">⚙</button>
+    </div>
+    <div class="mf"><div class="ml">Статус</div>
+      <select class="mi" id="finSitStatus">
+        <option value="">Без статуса (в плане)</option>
+        <option value="pending">В ожидании</option>
+        <option value="done">Выполнено (в факте)</option>
+      </select>
+    </div>
+    <div class="modal-btns">
+      <button class="mbtn danger" id="finSitDel" onclick="delFinSitEntry()" style="display:none">Удалить</button>
+      <button class="mbtn secondary" onclick="closeFinSitModal()">Отмена</button>
+      <button class="mbtn primary" onclick="saveFinSitEntry()">Сохранить</button>
     </div>
   </div>
 </div>
@@ -2415,8 +2501,8 @@ function goTo(s,focusId){
   document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('.tnav').forEach(x=>x.classList.remove('active'));
   document.getElementById('screen-'+s).classList.add('active');
-  const tabs=['week','focus','clients','habits','notes','bytovka','finance'];
-  const tabNames=['Календарь','Цели и Фокус','Клиенты','Привычки','Блокнот','Бытовка','Финансы'];
+  const tabs=['week','focus','clients','habits','notes','finance'];
+  const tabNames=['Календарь','Цели и Фокус','Клиенты','Привычки','Личное','Финансы'];
   const ti=tabs.indexOf(s);
   if(ti>=0){
     document.querySelectorAll('.tnav')[ti].classList.add('active');
@@ -3721,6 +3807,14 @@ function saveNotesLS(){try{localStorage.setItem('appNotes',JSON.stringify(notes)
 function nbFmt(iso){return new Date(iso).toLocaleDateString('ru',{day:'numeric',month:'short'});}
 function nbFmtFull(iso){return new Date(iso).toLocaleString('ru',{day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'});}
 
+function switchPersonalTab(tab){
+  document.getElementById('paneNotes').style.display=tab==='notes'?'flex':'none';
+  document.getElementById('paneSubs').style.display=tab==='subs'?'flex':'none';
+  document.getElementById('ptabNotes').classList.toggle('active',tab==='notes');
+  document.getElementById('ptabSubs').classList.toggle('active',tab==='subs');
+  if(tab==='subs')renderBytovka();
+}
+
 function renderNotes(){
   const q=(document.getElementById('nbSearch')?.value||'').toLowerCase();
   const cnt=document.getElementById('nbCards');if(!cnt)return;
@@ -4221,6 +4315,174 @@ document.getElementById('bytOverlay').addEventListener('click',function(e){if(e.
 // ═══════════════════════════════════════════════════════════════════
 // ФИНАНСЫ
 // ═══════════════════════════════════════════════════════════════════
+// ── Fin Pay Types ─────────────────────────────────────────────────────────────
+const FIN_PAY_DEFAULTS=[
+  {id:'fpt_cash',    label:'Наличные',  color:'#1D8A4E'},
+  {id:'fpt_transfer',label:'Перевод',   color:'#3B82F6'},
+  {id:'fpt_card',    label:'Карта',     color:'#8B5CF6'},
+  {id:'fpt_online',  label:'Онлайн',    color:'#E8A020'},
+];
+let finPayTypes=[...FIN_PAY_DEFAULTS];
+function saveFinPayTypes(){try{localStorage.setItem('finPayTypes',JSON.stringify(finPayTypes));}catch(e){}}
+function loadFinPayTypes(){try{const d=localStorage.getItem('finPayTypes');if(d)finPayTypes=JSON.parse(d);}catch(e){}}
+function getFinPayById(id){return finPayTypes.find(t=>t.id===id);}
+function populateFinPayType(selId,selectedVal){
+  const sel=document.getElementById(selId);if(!sel)return;
+  sel.innerHTML='<option value="">— без типа —</option>'+finPayTypes.map(t=>`<option value="${t.id}"${t.id===selectedVal?' selected':''}>${t.label}</option>`).join('');
+}
+function openFinPayManager(){
+  renderFinPayManager();
+  document.getElementById('finPayMgrOverlay').classList.add('show');
+}
+function closeFinPayManager(){
+  document.getElementById('finPayMgrOverlay').classList.remove('show');
+  populateFinPayType('finPayType',document.getElementById('finPayType')?.value||'');
+  populateFinPayType('finSitPayType',document.getElementById('finSitPayType')?.value||'');
+}
+function renderFinPayManager(){
+  const list=document.getElementById('finPayMgrList');if(!list)return;
+  list.innerHTML=finPayTypes.map(t=>`
+    <div class="sett-item">
+      <div class="sett-item-dot" style="background:${t.color}"></div>
+      <div class="sett-item-label">${t.label}</div>
+      <button class="sett-item-btn" onclick="editFinPayItem('${t.id}')">✏ Изм.</button>
+      ${t.builtin?'<button class="sett-item-btn del" onclick="resetFinPayItem(\''+t.id+'\')" title="Сбросить">↺</button>':'<button class="sett-item-btn del" onclick="deleteFinPayItem(\''+t.id+'\')">✕</button>'}
+    </div>`).join('');
+}
+function updateFinPayPreview(){
+  const color=document.getElementById('finPayAddColor').value;
+  const label=document.getElementById('finPayAddLabel').value||'Тип';
+  const p=document.getElementById('finPayPreview');if(!p)return;
+  p.style.background=color+'20';p.style.color=color;p.textContent=label.slice(0,8);
+}
+function editFinPayItem(id){
+  const t=getFinPayById(id);if(!t)return;
+  document.getElementById('finPayEditId').value=id;
+  document.getElementById('finPayAddLabel').value=t.label;
+  document.getElementById('finPayAddColor').value=t.color;
+  updateFinPayPreview();
+}
+function saveFinPayItem(){
+  const id=document.getElementById('finPayEditId').value;
+  const label=document.getElementById('finPayAddLabel').value.trim();
+  const color=document.getElementById('finPayAddColor').value;
+  if(!label)return;
+  if(id){const t=getFinPayById(id);if(t){t.label=label;t.color=color;}}
+  else{finPayTypes.push({id:'fpt_'+Date.now(),label,color,builtin:false});}
+  saveFinPayTypes();
+  document.getElementById('finPayEditId').value='';
+  document.getElementById('finPayAddLabel').value='';
+  document.getElementById('finPayAddColor').value='#3B82F6';
+  updateFinPayPreview();
+  renderFinPayManager();
+}
+function deleteFinPayItem(id){finPayTypes=finPayTypes.filter(t=>t.id!==id);saveFinPayTypes();renderFinPayManager();}
+function resetFinPayItem(id){
+  const def=FIN_PAY_DEFAULTS.find(t=>t.id===id);if(!def)return;
+  const t=getFinPayById(id);if(t){t.label=def.label;t.color=def.color;}
+  saveFinPayTypes();renderFinPayManager();
+}
+document.getElementById('finPayMgrOverlay').addEventListener('click',function(e){if(e.target===this)closeFinPayManager();});
+
+// ── Fin Sit Entries ───────────────────────────────────────────────────────────
+let finSitEntries=[];
+let finSitEditId=null;
+let finSitEditType='income';
+function saveFinSitData(){try{localStorage.setItem('finSitEntries',JSON.stringify(finSitEntries));}catch(e){}}
+function loadFinSitData(){try{const d=localStorage.getItem('finSitEntries');if(d)finSitEntries=JSON.parse(d);}catch(e){}}
+function openFinSitModal(type,id){
+  finSitEditType=type||'income';finSitEditId=id||null;
+  document.getElementById('finSitModalTitle').textContent=finSitEditType==='income'?(id?'Ред. доход':'Новый доход'):(id?'Ред. расход':'Новый расход');
+  populateFinPayType('finSitPayType','');
+  if(id){
+    const e=finSitEntries.find(x=>x.id===id);if(!e)return;
+    document.getElementById('finSitName').value=e.name||'';
+    document.getElementById('finSitAmount').value=e.amount||'';
+    document.getElementById('finSitDate').value=e.date||'';
+    populateFinPayType('finSitPayType',e.paymentType||'');
+    document.getElementById('finSitStatus').value=e.status||'';
+    document.getElementById('finSitDel').style.display='block';
+  }else{
+    document.getElementById('finSitName').value='';
+    document.getElementById('finSitAmount').value='';
+    document.getElementById('finSitDate').value='';
+    document.getElementById('finSitStatus').value='';
+    document.getElementById('finSitDel').style.display='none';
+  }
+  document.getElementById('finSitOverlay').classList.add('show');
+  setTimeout(()=>document.getElementById('finSitName').focus(),100);
+}
+function closeFinSitModal(){document.getElementById('finSitOverlay').classList.remove('show');finSitEditId=null;}
+function saveFinSitEntry(){
+  const name=document.getElementById('finSitName').value.trim();if(!name)return;
+  const amount=parseFloat(document.getElementById('finSitAmount').value)||0;if(!amount)return;
+  const date=document.getElementById('finSitDate').value||null;
+  const paymentType=document.getElementById('finSitPayType').value||null;
+  const status=document.getElementById('finSitStatus').value||null;
+  if(finSitEditId){
+    const e=finSitEntries.find(x=>x.id===finSitEditId);
+    if(e)Object.assign(e,{name,amount,date,paymentType,status});
+  }else{
+    finSitEntries.push({id:'fsi_'+Date.now(),type:finSitEditType,name,amount,date,paymentType,status,source:'sit'});
+  }
+  saveFinSitData();renderFinance();closeFinSitModal();
+}
+function delFinSitEntry(){
+  if(!finSitEditId)return;
+  finSitEntries=finSitEntries.filter(x=>x.id!==finSitEditId);
+  saveFinSitData();renderFinance();closeFinSitModal();
+}
+function delFinSitDirect(id){finSitEntries=finSitEntries.filter(x=>x.id!==id);saveFinSitData();renderFinance();}
+function cycleSitSt(id){
+  const cycle=[null,'pending','done'];
+  const e=finSitEntries.find(x=>x.id===id);if(!e)return;
+  const idx=cycle.indexOf(e.status);
+  e.status=cycle[(idx+1)%cycle.length];
+  saveFinSitData();renderFinance();
+}
+function renderFinSitTables(){
+  const incEl=document.getElementById('finSitIncTable');
+  const expEl=document.getElementById('finSitExpTable');
+  const tiEl=document.getElementById('finSitTotalInc');
+  const teEl=document.getElementById('finSitTotalExp');
+  if(!incEl||!expEl)return;
+  const income=finSitEntries.filter(e=>e.type==='income');
+  const expense=finSitEntries.filter(e=>e.type==='expense');
+  const sumInc=income.reduce((s,e)=>s+e.amount,0);
+  const sumExp=expense.reduce((s,e)=>s+e.amount,0);
+  if(tiEl)tiEl.textContent=fmtRub(sumInc);
+  if(teEl)teEl.textContent=fmtRub(sumExp);
+  function sitRows(entries,type){
+    if(!entries.length)return`<div class="fin-empty">Список пуст</div>`;
+    const stLbl=type==='income'?{null:'В плане',pending:'Ожидается',done:'Получено'}:{null:'В плане',pending:'Ожидается',done:'Оплачено'};
+    const amtCls=type==='income'?'inc':'exp';
+    return entries.map(e=>{
+      const pt=getFinPayById(e.paymentType);
+      const ptChip=pt?`<span class="fin-pay-chip" style="background:${pt.color}20;color:${pt.color};border-color:${pt.color}30">${pt.label}</span>`:'';
+      const stKey=e.status===null?'null':e.status;
+      const stCls={null:'st-none',pending:'st-pending',done:'st-done'}[stKey];
+      const stTxt=stLbl[e.status];
+      const dateStr=e.date?`<span style="font-size:10px;color:var(--t3);margin-left:6px">${e.date.split('-').reverse().join('.')}</span>`:'';
+      return`<div class="fin-entry">
+        <div class="fin-entry-top">
+          <span class="fin-entry-name">${e.name.replace(/</g,'&lt;')}</span>
+          <span class="fin-entry-amt ${amtCls}">${fmtRub(e.amount)}</span>
+          <button class="fin-del-btn" onclick="delFinSitDirect('${e.id}')" title="Удалить">✕</button>
+        </div>
+        <div class="fin-entry-row">
+          ${ptChip}
+          <button class="fin-st-btn ${stCls}" onclick="cycleSitSt('${e.id}')">${stTxt}</button>
+          ${dateStr}
+          <button class="fin-edit-btn" onclick="openFinSitModal('${type}','${e.id}')">✏</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+  incEl.innerHTML=sitRows(income,'income');
+  expEl.innerHTML=sitRows(expense,'expense');
+}
+document.getElementById('finSitOverlay').addEventListener('click',function(e){if(e.target===this)closeFinSitModal();});
+
 let finEntries=[];
 let finStatuses={};
 let finViewMonth=new Date(new Date().getFullYear(),new Date().getMonth(),1);
@@ -4233,6 +4495,7 @@ function fmtRub(n){return Number(n||0).toLocaleString('ru')+' ₽';}
 function saveFinData(){try{localStorage.setItem('finEntries',JSON.stringify(finEntries));localStorage.setItem('finStatuses',JSON.stringify(finStatuses));}catch(e){}}
 function loadFinData(){
   try{const e=localStorage.getItem('finEntries');if(e)finEntries=JSON.parse(e);const s=localStorage.getItem('finStatuses');if(s)finStatuses=JSON.parse(s);}catch(e){}
+  loadFinPayTypes();loadFinSitData();
   renderFinance();
 }
 
@@ -4268,7 +4531,8 @@ function getBytovkaFinEntries(mk){
 }
 
 function getAllFinEntries(mk){
-  return[...getClientFinEntries(mk),...getBytovkaFinEntries(mk),...finEntries.filter(e=>e.month===mk)];
+  const sitForMonth=finSitEntries.filter(e=>e.date&&e.date.slice(0,7)===mk);
+  return[...getClientFinEntries(mk),...getBytovkaFinEntries(mk),...finEntries.filter(e=>e.month===mk),...sitForMonth];
 }
 
 function inPlan(e){return true;}
@@ -4363,6 +4627,7 @@ function renderFinance(){
   if(yl)yl.textContent='ГОД '+yr;
   renderFinCharts();
   renderFinTables(mk);
+  renderFinSitTables();
 }
 
 function renderFinCharts(){
@@ -4400,14 +4665,18 @@ function renderFinTables(mk){
   const expense=ents.filter(e=>e.type==='expense');
   const sumInc=income.reduce((s,e)=>s+e.amount,0);
   const sumExp=expense.reduce((s,e)=>s+e.amount,0);
-  const profit=sumInc-sumExp;
+  const sitInc=finSitEntries.filter(e=>e.type==='income').reduce((s,e)=>s+e.amount,0);
+  const sitExp=finSitEntries.filter(e=>e.type==='expense').reduce((s,e)=>s+e.amount,0);
+  const totalInc=sumInc+sitInc;
+  const totalExp=sumExp+sitExp;
+  const profit=totalInc-totalExp;
   const si=document.getElementById('finSumInc');
   const se=document.getElementById('finSumExp');
   const sp=document.getElementById('finSumProfit');
   const ti=document.getElementById('finTotalInc');
   const te=document.getElementById('finTotalExp');
-  if(si)si.textContent=fmtRub(sumInc);
-  if(se)se.textContent=fmtRub(sumExp);
+  if(si)si.textContent=fmtRub(totalInc);
+  if(se)se.textContent=fmtRub(totalExp);
   if(sp){sp.textContent=fmtRub(profit);sp.style.color=profit>=0?'var(--success)':'var(--coral)';}
   if(ti)ti.textContent=fmtRub(sumInc);
   if(te)te.textContent=fmtRub(sumExp);
@@ -4421,13 +4690,18 @@ function renderFinTables(mk){
       const stCls={null:'st-none',pending:'st-pending',done:'st-done'}[stKey];
       const stTxt=stLbl[e.status];
       const amtCls=type==='income'?'inc':'exp';
+      const pt=getFinPayById(e.paymentType);
+      const ptChip=pt?`<span class="fin-pay-chip" style="background:${pt.color}20;color:${pt.color};border-color:${pt.color}30">${pt.label}</span>`:'';
       const editBtn=!isDerived?`<button class="fin-edit-btn" onclick="openFinModal('${type}','${e.id}')">✏</button>`:'';
+      const delBtn=!isDerived?`<button class="fin-del-btn" onclick="delFinDirect('${e.id}')" title="Удалить">✕</button>`:'';
       return`<div class="fin-entry">
         <div class="fin-entry-top">
           <span class="fin-entry-name">${e.name.replace(/</g,'&lt;')}${srcTag}</span>
           <span class="fin-entry-amt ${amtCls}">${fmtRub(e.amount)}</span>
+          ${delBtn}
         </div>
         <div class="fin-entry-row">
+          ${ptChip}
           <button class="fin-st-btn ${stCls}" onclick="cycleFinSt('${e.id}','${e.source||'manual'}')">${stTxt}</button>
           ${editBtn}
         </div>
@@ -4436,6 +4710,11 @@ function renderFinTables(mk){
   }
   incEl.innerHTML=rows(income,'income');
   expEl.innerHTML=rows(expense,'expense');
+}
+
+function delFinDirect(id){
+  finEntries=finEntries.filter(x=>x.id!==id);
+  saveFinData();renderFinance();
 }
 
 function cycleFinSt(id,source){
@@ -4464,12 +4743,14 @@ function openFinModal(type,id){
     document.getElementById('finName').value=e.name||'';
     document.getElementById('finAmount').value=e.amount||'';
     document.getElementById('finDate').value=e.date||'';
+    populateFinPayType('finPayType',e.paymentType||'');
     sel.value=e.status||'';
     document.getElementById('finDel').style.display='block';
   }else{
     document.getElementById('finName').value='';
     document.getElementById('finAmount').value='';
     document.getElementById('finDate').value='';
+    populateFinPayType('finPayType','');
     sel.value='';
     document.getElementById('finDel').style.display='none';
   }
@@ -4483,13 +4764,14 @@ function saveFinEntry(){
   const name=document.getElementById('finName').value.trim();if(!name)return;
   const amount=parseFloat(document.getElementById('finAmount').value)||0;if(!amount)return;
   const date=document.getElementById('finDate').value||null;
+  const paymentType=document.getElementById('finPayType').value||null;
   const status=document.getElementById('finStatus').value||null;
   const month=date?date.slice(0,7):finMK(finViewMonth);
   if(finEditId){
     const e=finEntries.find(x=>x.id===finEditId);
-    if(e)Object.assign(e,{name,amount,date,status,month});
+    if(e)Object.assign(e,{name,amount,date,paymentType,status,month});
   }else{
-    finEntries.push({id:'fin_'+Date.now(),type:finEditType,name,amount,date,status,month,source:'manual'});
+    finEntries.push({id:'fin_'+Date.now(),type:finEditType,name,amount,date,paymentType,status,month,source:'manual'});
   }
   saveFinData();renderFinance();closeFinModal();
 }
@@ -4557,10 +4839,7 @@ renderSidebar();
   </div><span>Привычки</span></div>
   <div class="bnav" onclick="goTo('notes')"><div class="bnav-icon">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-  </div><span>Блокнот</span></div>
-  <div class="bnav" onclick="goTo('bytovka')"><div class="bnav-icon">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-  </div><span>Бытовка</span></div>
+  </div><span>Личное</span></div>
   <div class="bnav" onclick="goTo('finance')"><div class="bnav-icon">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
   </div><span>Финансы</span></div>
