@@ -742,6 +742,10 @@ select.mi{-webkit-appearance:none;cursor:pointer}
 
 /* NOTEBOOK */
 #screen-notes{overflow:hidden}
+.personal-tabs{display:flex;gap:0;border-bottom:2px solid var(--b1);flex-shrink:0;background:var(--s1);padding:0 16px}
+.personal-tab{background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;padding:12px 16px;font-size:13px;font-family:'Onest',sans-serif;color:var(--t3);cursor:pointer;transition:all .15s;font-weight:500}
+.personal-tab.active{color:var(--magenta);border-bottom-color:var(--magenta)}
+.personal-tab:hover:not(.active){color:var(--t1)}
 .nb-toolbar{display:flex;align-items:center;gap:8px;padding:14px 20px;border-bottom:1px solid var(--b1);flex-shrink:0;background:var(--s1)}
 .nb-search{flex:1;background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);padding:7px 12px;color:var(--t1);font-family:'Onest',sans-serif;font-size:12px;outline:none;transition:border-color .2s}
 .nb-search:focus{border-color:var(--blue)}.nb-search::placeholder{color:var(--t3)}
@@ -1389,9 +1393,7 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
     <div class="tnav" onclick="goTo('focus')">⭐ Цели и Фокус</div>
     <div class="tnav" onclick="goTo('clients')">💼 Клиенты</div>
     <div class="tnav" onclick="goTo('habits')">🏆 Привычки</div>
-    <div class="tnav" onclick="goTo('notes')">📓 Блокнот</div>
-
-    <div class="tnav" onclick="goTo('bytovka')">🏠 Бытовка</div>
+    <div class="tnav" onclick="goTo('notes')">📒 Личное</div>
     <div class="tnav" onclick="goTo('finance')">💰 Финансы</div>
   </div>
   <div class="topbar-right" style="display:flex;align-items:center;gap:8px">
@@ -1477,29 +1479,46 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
 
 <!-- NOTES (NOTEBOOK) -->
 <div class="screen" id="screen-notes">
-  <div id="nbListView" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
-    <div class="nb-toolbar">
-      <input class="nb-search" id="nbSearch" placeholder="🔍 Поиск заметок..." oninput="renderNotes()">
-      <div class="nb-vbtn active" id="nbBtnGrid" onclick="setNbView('grid')" title="Сетка">⊞</div>
-      <div class="nb-vbtn" id="nbBtnList" onclick="setNbView('list')" title="Список">≡</div>
-      <button class="add-btn" onclick="openNoteEditor(null)">+ Создать</button>
-    </div>
-    <div class="nb-list" id="nbCards"></div>
+  <!-- Tab bar -->
+  <div class="personal-tabs">
+    <button class="personal-tab active" id="ptabNotes" onclick="switchPersonalTab('notes')">📓 Заметки</button>
+    <button class="personal-tab" id="ptabSubs" onclick="switchPersonalTab('subs')">🏠 Подписки</button>
   </div>
-  <div id="nbEditorView" class="nb-editor">
-    <div class="nb-editor-hdr">
-      <button class="nb-back" onclick="closeNoteEditor()">← Заметки</button>
-      <div class="nb-editor-acts">
-        <button class="nb-act" id="nbPinBtn" onclick="toggleNotePin()">📌 Закрепить</button>
-        <button class="nb-act del" onclick="deleteCurrentNote()">🗑 Удалить</button>
+  <!-- Pane: Заметки -->
+  <div id="paneNotes" style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0">
+    <div id="nbListView" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+      <div class="nb-toolbar">
+        <input class="nb-search" id="nbSearch" placeholder="🔍 Поиск заметок..." oninput="renderNotes()">
+        <div class="nb-vbtn active" id="nbBtnGrid" onclick="setNbView('grid')" title="Сетка">⊞</div>
+        <div class="nb-vbtn" id="nbBtnList" onclick="setNbView('list')" title="Список">≡</div>
+        <button class="add-btn" onclick="openNoteEditor(null)">+ Создать</button>
+      </div>
+      <div class="nb-list" id="nbCards"></div>
+    </div>
+    <div id="nbEditorView" class="nb-editor">
+      <div class="nb-editor-hdr">
+        <button class="nb-back" onclick="closeNoteEditor()">← Заметки</button>
+        <div class="nb-editor-acts">
+          <button class="nb-act" id="nbPinBtn" onclick="toggleNotePin()">📌 Закрепить</button>
+          <button class="nb-act del" onclick="deleteCurrentNote()">🗑 Удалить</button>
+        </div>
+      </div>
+      <input class="nb-title-inp" id="nbTitleInp" placeholder="Заголовок..." oninput="autoSaveNote()">
+      <textarea class="nb-body-ta" id="nbBodyTa" placeholder="Начни писать..." oninput="autoSaveNote()"></textarea>
+      <div class="nb-meta">
+        <span id="nbMetaText">Новая заметка</span>
+        <div class="nc-dots" id="ncDots"></div>
       </div>
     </div>
-    <input class="nb-title-inp" id="nbTitleInp" placeholder="Заголовок..." oninput="autoSaveNote()">
-    <textarea class="nb-body-ta" id="nbBodyTa" placeholder="Начни писать..." oninput="autoSaveNote()"></textarea>
-    <div class="nb-meta">
-      <span id="nbMetaText">Новая заметка</span>
-      <div class="nc-dots" id="ncDots"></div>
+  </div>
+  <!-- Pane: Подписки -->
+  <div id="paneSubs" style="display:none;flex:1;overflow-y:auto;padding:20px">
+    <div class="byt-toolbar">
+      <div class="screen-heading">Подписки</div>
+      <button class="add-btn" onclick="openBytModal(null)">+ Добавить</button>
     </div>
+    <div class="byt-stats" id="bytStats"></div>
+    <div class="byt-grid" id="bytGrid"></div>
   </div>
 </div>
 
@@ -1763,14 +1782,6 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
 </div>
 
 <!-- БЫТОВКА -->
-<div class="screen" id="screen-bytovka">
-  <div class="byt-toolbar">
-    <div class="screen-heading">Бытовка</div>
-    <button class="add-btn" onclick="openBytModal(null)">+ Добавить</button>
-  </div>
-  <div class="byt-stats" id="bytStats"></div>
-  <div class="byt-grid" id="bytGrid"></div>
-</div>
 
 </div><!-- /main -->
 </div><!-- /layout -->
@@ -2415,8 +2426,8 @@ function goTo(s,focusId){
   document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('.tnav').forEach(x=>x.classList.remove('active'));
   document.getElementById('screen-'+s).classList.add('active');
-  const tabs=['week','focus','clients','habits','notes','bytovka','finance'];
-  const tabNames=['Календарь','Цели и Фокус','Клиенты','Привычки','Блокнот','Бытовка','Финансы'];
+  const tabs=['week','focus','clients','habits','notes','finance'];
+  const tabNames=['Календарь','Цели и Фокус','Клиенты','Привычки','Личное','Финансы'];
   const ti=tabs.indexOf(s);
   if(ti>=0){
     document.querySelectorAll('.tnav')[ti].classList.add('active');
@@ -3721,6 +3732,14 @@ function saveNotesLS(){try{localStorage.setItem('appNotes',JSON.stringify(notes)
 function nbFmt(iso){return new Date(iso).toLocaleDateString('ru',{day:'numeric',month:'short'});}
 function nbFmtFull(iso){return new Date(iso).toLocaleString('ru',{day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'});}
 
+function switchPersonalTab(tab){
+  document.getElementById('paneNotes').style.display=tab==='notes'?'flex':'none';
+  document.getElementById('paneSubs').style.display=tab==='subs'?'flex':'none';
+  document.getElementById('ptabNotes').classList.toggle('active',tab==='notes');
+  document.getElementById('ptabSubs').classList.toggle('active',tab==='subs');
+  if(tab==='subs')renderBytovka();
+}
+
 function renderNotes(){
   const q=(document.getElementById('nbSearch')?.value||'').toLowerCase();
   const cnt=document.getElementById('nbCards');if(!cnt)return;
@@ -4557,10 +4576,7 @@ renderSidebar();
   </div><span>Привычки</span></div>
   <div class="bnav" onclick="goTo('notes')"><div class="bnav-icon">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-  </div><span>Блокнот</span></div>
-  <div class="bnav" onclick="goTo('bytovka')"><div class="bnav-icon">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-  </div><span>Бытовка</span></div>
+  </div><span>Личное</span></div>
   <div class="bnav" onclick="goTo('finance')"><div class="bnav-icon">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
   </div><span>Финансы</span></div>
