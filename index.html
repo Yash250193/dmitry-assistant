@@ -237,7 +237,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Onest',sans-serif;font-si
 .tl-day-hdr.tl-today .tl-day-name{color:var(--blue)}
 .tl-add-btn{background:none;border:none;font-size:10px;color:var(--blue);cursor:pointer;font-family:'Onest',sans-serif;padding:2px 6px;border-radius:4px;transition:background .15s}
 .tl-add-btn:hover{background:var(--blue3)}
-.tl-row{display:grid;grid-template-columns:20px 38px 64px 1fr auto auto 18px;align-items:center;gap:8px;padding:7px 14px;border-bottom:1px solid rgba(var(--b1-rgb,226,222,240),.5);transition:background .12s;font-size:11px}
+.tl-row{display:grid;grid-template-columns:20px 38px 64px 80px 1fr auto auto 18px;align-items:center;gap:8px;padding:7px 14px;border-bottom:1px solid rgba(var(--b1-rgb,226,222,240),.5);transition:background .12s;font-size:11px}
 .tl-row:last-child{border-bottom:none}
 .tl-row:hover{background:var(--s2)}
 .tl-row.tl-done .tl-name{text-decoration:line-through;opacity:.45}
@@ -246,6 +246,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Onest',sans-serif;font-si
 .tl-row.tl-done .tl-chk{background:var(--blue);border-color:var(--blue);color:#fff}
 .tl-time{font-size:9px;color:var(--t3);white-space:nowrap}
 .tl-type{font-size:8.5px;font-weight:600;padding:2px 6px;border-radius:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:64px}
+.tl-client{font-size:8.5px;font-weight:600;padding:2px 6px;border-radius:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px;background:rgba(59,130,246,.13);color:#3B82F6}
 .tl-name{font-size:11px;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;display:flex;flex-direction:column;align-items:flex-start}
 .tl-name:hover{color:var(--blue)}
 .tl-prio{flex-shrink:0}
@@ -282,6 +283,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Onest',sans-serif;font-si
     gap:6px;padding:8px 12px;font-size:11px
   }
   .tl-type{display:none}
+  .tl-client{display:none}
   .tl-dl{font-size:8.5px}
   .tl-day-hdr{padding:8px 12px}
   .tl-day-name{font-size:9.5px}
@@ -2481,6 +2483,11 @@ function weekKey(mon){return mon.getFullYear()+'-'+String(mon.getMonth()+1).padS
 function weekDayKey(mon,di){const d=new Date(mon);d.setDate(d.getDate()+di);return weekKey(d);}
 function weekLabel(mon){const d2=new Date(mon);d2.setDate(d2.getDate()+6);const mo1=MONTHS[mon.getMonth()],mo2=MONTHS[d2.getMonth()];if(mo1===mo2)return mon.getDate()+'–'+d2.getDate()+' '+mo1;return mon.getDate()+' '+mo1.slice(0,3)+'–'+d2.getDate()+' '+mo2.slice(0,3);}
 const TYPE_LABELS=new Proxy({},{get(_,k){return getETLabel(k);}});
+function tlClientChip(e){
+  if(!e.clientId)return'<span></span>';
+  const cl=clients.find(c=>c.id===e.clientId);
+  return cl?`<span class="tl-client" title="${cl.name}">${cl.name}</span>`:'<span></span>';
+}
 function evColorStyle(cl){
   if(!cl||cl.startsWith('ev-'))return'';
   const c=getETColor(cl);
@@ -2888,6 +2895,7 @@ function renderNodateGroup(dragStartFn,dragEndFn,dropFn){
       <span class="tl-chk" onclick="toggleNodateDone(${e.id})" title="${e.done?'Снять':'Выполнено'}">${e.done?'✓':''}</span>
       <span class="tl-time">${e.t}</span>
       <span class="tl-type ${e.cl}" style="font-size:8.5px;font-weight:600;padding:2px 5px;border-radius:4px;${evColorStyle(e.cl)}">${typeLabel}</span>
+      ${tlClientChip(e)}
       <span class="tl-name" onclick="openCalEditM('no-date',${e.id})"><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">${e.tx}</span>${e.comment?`<span class="tl-comment">${e.comment}</span>`:''}</span>
       <span class="tl-prio">${e.priority?priorityBadge(e):''}</span>
       ${dlTxt?`<span class="tl-dl">до ${dlTxt}</span>`:'<span class="tl-dl"></span>'}
@@ -2938,6 +2946,7 @@ function renderWeekTaskList(){
           <span class="tl-chk" onclick="${chkFn}" title="${e.done?'Снять':'Выполнено'}">${e.done?'✓':''}</span>
           <span class="tl-time">${e.t}</span>
           <span class="tl-type ${e.cl}" style="font-size:8.5px;font-weight:600;padding:2px 5px;border-radius:4px;${evColorStyle(e.cl)}">${typeLabel}</span>
+          ${tlClientChip(e)}
           <span class="tl-name" onclick="${editFn}"><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">${e.tx}</span>${e.comment?`<span class="tl-comment">${e.comment}</span>`:''}</span>
           <span class="tl-prio">${e.priority?priorityBadge(e):''}</span>
           ${dlTxt?`<span class="tl-dl">до ${dlTxt}</span>`:'<span class="tl-dl"></span>'}
@@ -3029,6 +3038,7 @@ function renderMonthTaskList(){
           <span class="tl-chk" onclick="${chkFn}" title="${e.done?'Снять':'Выполнено'}">${e.done?'✓':''}</span>
           <span class="tl-time">${e.t}</span>
           <span class="tl-type ${e.cl}" style="font-size:8.5px;font-weight:600;padding:2px 5px;border-radius:4px;${evColorStyle(e.cl)}">${typeLabel}</span>
+          ${tlClientChip(e)}
           <span class="tl-name" onclick="${editFn}"><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">${e.tx}</span>${e.comment?`<span class="tl-comment">${e.comment}</span>`:''}</span>
           <span class="tl-prio">${e.priority?priorityBadge(e):''}</span>
           ${dlTxt?`<span class="tl-dl">до ${dlTxt}</span>`:'<span class="tl-dl"></span>'}
