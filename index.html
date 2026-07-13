@@ -197,7 +197,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Onest',sans-serif;font-si
 .tl-day-hdr.tl-today .tl-day-name{color:var(--blue)}
 .tl-add-btn{background:none;border:none;font-size:10px;color:var(--blue);cursor:pointer;font-family:'Onest',sans-serif;padding:2px 6px;border-radius:4px;transition:background .15s}
 .tl-add-btn:hover{background:var(--blue3)}
-.tl-row{display:grid;grid-template-columns:20px 38px 64px 1fr auto auto;align-items:center;gap:8px;padding:7px 14px;border-bottom:1px solid rgba(var(--b1-rgb,226,222,240),.5);transition:background .12s;font-size:11px}
+.tl-row{display:grid;grid-template-columns:20px 38px 64px 1fr auto auto 18px;align-items:center;gap:8px;padding:7px 14px;border-bottom:1px solid rgba(var(--b1-rgb,226,222,240),.5);transition:background .12s;font-size:11px}
 .tl-row:last-child{border-bottom:none}
 .tl-row:hover{background:var(--s2)}
 .tl-row.tl-done .tl-name{text-decoration:line-through;opacity:.45}
@@ -210,6 +210,9 @@ body{background:var(--bg);color:var(--t1);font-family:'Onest',sans-serif;font-si
 .tl-name:hover{color:var(--blue)}
 .tl-prio{flex-shrink:0}
 .tl-dl{font-size:9px;color:var(--t3);white-space:nowrap;flex-shrink:0}
+.tl-del{background:none;border:none;color:var(--t3);cursor:pointer;font-size:13px;padding:0 2px;opacity:0;transition:opacity .15s;flex-shrink:0;line-height:1}
+.tl-row:hover .tl-del{opacity:1}
+.tl-del:hover{color:var(--coral)}
 .tl-empty{padding:10px 14px;font-size:10px;color:var(--t3);font-style:italic}
 /* Фильтры списка задач */
 .tl-filters{display:flex;gap:4px}
@@ -236,7 +239,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Onest',sans-serif;font-si
   .tl-add-btn{min-height:36px;padding:0 10px}
   /* Строка задачи: скрываем тип, показываем важное */
   .tl-row{
-    grid-template-columns:22px 34px 1fr auto auto;
+    grid-template-columns:22px 34px 1fr auto auto 18px;
     gap:6px;padding:8px 12px;font-size:11px
   }
   .tl-type{display:none}
@@ -624,6 +627,9 @@ select.mi{-webkit-appearance:none;cursor:pointer}
 .mrev.ev-done{opacity:.5}
 .mrev.ev-done .mrev-tx{text-decoration:line-through}
 .mrev.ev-done .mrev-chk{color:#86efac}
+.mrev-del{background:none;border:none;color:var(--t3);cursor:pointer;font-size:13px;padding:0 2px;opacity:0;transition:opacity .15s;flex-shrink:0;line-height:1}
+.mrev:hover .mrev-del{opacity:1}
+.mrev-del:hover{color:var(--coral)}
 
 /* STATS BLOCKS */
 .stats-block{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r2);padding:14px 16px;margin-top:12px}
@@ -2278,12 +2284,14 @@ function renderWeekRight(){
     const isWeek=e.day!==undefined;const isCT=e._ctask;
     const chkFn=isWeek?`toggleCalEvDone(${e.id})`:isCT?`toggleClientTaskFromCal(${e._cid},${e.id})`:`toggleMEvDoneWeek('${selWeekDay}',${e.id})`;
     const editFn=isWeek?`openCalEdit(${e.id})`:isCT?`openClientDetail(${e._cid})`:`openCalEditM('${selWeekDay}',${e.id})`;
+    const canDel=!isWeek&&!isCT;
     return`<div class="mrev ${e.cl}${e.done?' ev-done':''}">
       <span class="mrev-chk" onclick="${chkFn}">${e.done?'✓':'○'}</span>
       <span class="mrev-time">${e.t}</span>
       <div class="mrev-dot" style="background:${cmap[e.cl]||'#3b82f6'}"></div>
       <span class="mrev-tx" onclick="${editFn}" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer">${e.tx}</span>
       ${priorityBadge(e)}
+      <button class="mrev-del" title="Удалить" ${canDel?`onclick="delMEvWeek('${selWeekDay}',${e.id})"`:''} style="${canDel?'':'visibility:hidden'}">✕</button>
     </div>`;
   }).join(''):'<div class="no-evs">Нет задач</div>';
   l.innerHTML=dayStatusBar(selWeekDay)+evHtml+`<div class="add-month-btn" onclick="openCalAdd(null,'${selWeekDay}')">＋ Добавить задачу</div>`;
@@ -2291,6 +2299,19 @@ function renderWeekRight(){
 function toggleMEvDoneWeek(key,id){
   const e=(mevs[key]||[]).find(x=>x.id===id);if(!e)return;
   e.done=!e.done;saveCalLS();renderWeek();
+}
+function delMEvWeek(key,id){
+  if(!mevs[key])return;
+  mevs[key]=mevs[key].filter(x=>x.id!==id);
+  saveCalLS();renderWeek();renderWeekRight();
+}
+function delMEv(key,id){
+  if(!mevs[key])return;
+  mevs[key]=mevs[key].filter(x=>x.id!==id);
+  saveCalLS();
+  renderWeek();renderWeekRight();
+  if(document.getElementById('screen-month').classList.contains('active')){renderMonth();renderMRight();renderMonthStats();renderMonthTaskList();}
+  else{renderWeekTaskList();}
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -2356,6 +2377,7 @@ function renderWeekTaskList(){
         const isDraggable=!isCE&&!isCT; // only mevs tasks are draggable
         const chkFn=isCE?`toggleCalEvDone(${e.id})`:isCT?`toggleClientTaskFromCal(${e._cid},${e.id})`:`toggleMEvDone('${dk}',${e.id})`;
         const editFn=isCE?`openCalEdit(${e.id})`:isCT?`openClientDetail(${e._cid})`:`openCalEditM('${dk}',${e.id})`;
+        const delFn=isCE||isCT?'':` onclick="delMEv('${dk}',${e.id})"`;
         const typeLabel=TYPE_LABELS[e.cl]||'Другое';
         const dlTxt=e.deadline?e.deadline.slice(5).replace('-','.'):'';
         return`<div class="tl-row${e.done?' tl-done':''}" ${isDraggable?`draggable="true" ondragstart="tlDragStart(event,${e.id},'${dk}')" ondragend="tlDragEnd(event)"`:''}>
@@ -2365,6 +2387,7 @@ function renderWeekTaskList(){
           <span class="tl-name" onclick="${editFn}">${e.tx}</span>
           <span class="tl-prio">${e.priority?priorityBadge(e):''}</span>
           ${dlTxt?`<span class="tl-dl">до ${dlTxt}</span>`:'<span class="tl-dl"></span>'}
+          <button class="tl-del" title="Удалить"${delFn} style="${isCE||isCT?'visibility:hidden':''}">✕</button>
         </div>`;
       }).join(''):`<div class="tl-empty">${tlFilter==='all'?`нет задач · <span style="cursor:pointer;color:var(--blue)" onclick="openCalAdd(null,'${dk}')">добавить</span>`:tlFilter==='done'?'нет выполненных':'нет активных'}</div>`}
     </div>`;
@@ -2444,6 +2467,7 @@ function renderMonthTaskList(){
         const isDraggable=!isCE&&!isCT;
         const chkFn=isCE?`toggleCalEvDone(${e.id})`:isCT?`toggleClientTaskFromCal(${e._cid},${e.id})`:`toggleCalEvDoneM('${dk}',${e.id})`;
         const editFn=isCE?`openCalEdit(${e.id})`:isCT?`openClientDetail(${e._cid})`:`openCalEditM('${dk}',${e.id})`;
+        const delFn=isCE||isCT?'':` onclick="delMEv('${dk}',${e.id})"`;
         const typeLabel=TYPE_LABELS[e.cl]||'Другое';
         const dlTxt=e.deadline?e.deadline.slice(5).replace('-','.'):'';
         return`<div class="tl-row${e.done?' tl-done':''}" ${isDraggable?`draggable="true" ondragstart="mtlDragStart(event,${e.id},'${dk}')" ondragend="mtlDragEnd(event)"`:''}>
@@ -2453,6 +2477,7 @@ function renderMonthTaskList(){
           <span class="tl-name" onclick="${editFn}">${e.tx}</span>
           <span class="tl-prio">${e.priority?priorityBadge(e):''}</span>
           ${dlTxt?`<span class="tl-dl">до ${dlTxt}</span>`:'<span class="tl-dl"></span>'}
+          <button class="tl-del" title="Удалить"${delFn} style="${isCE||isCT?'visibility:hidden':''}">✕</button>
         </div>`;
       }).join(''):`<div class="tl-empty">нет ${mtlFilter==='done'?'выполненных':'активных'}</div>`}
     </div>`;
@@ -2524,12 +2549,14 @@ function renderMRight(){
     const isWeek=e.day!==undefined;const isCT=e._ctask;
     const chkFn=isWeek?`toggleCalEvDone(${e.id})`:isCT?`toggleClientTaskFromCal(${e._cid},${e.id})`:`toggleCalEvDoneM('${selDay.key}',${e.id})`;
     const editFn=isWeek?`openCalEdit(${e.id})`:isCT?`openClientDetail(${e._cid})`:`openCalEditM('${selDay.key}',${e.id})`;
+    const canDel=!isWeek&&!isCT;
     return`<div class="mrev ${e.cl}${e.done?' ev-done':''}">
       <span class="mrev-chk" onclick="${chkFn}">${e.done?'✓':'○'}</span>
       <span class="mrev-time">${e.t}</span>
       <div class="mrev-dot" style="background:${cmap[e.cl]||'#3b82f6'}"></div>
       <span class="mrev-tx" onclick="${editFn}" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer">${e.tx}</span>
       ${priorityBadge(e)}
+      <button class="mrev-del" title="Удалить" ${canDel?`onclick="delMEv('${selDay.key}',${e.id})"`:''} style="${canDel?'':'visibility:hidden'}">✕</button>
     </div>`;
   }).join(''):'<div class="no-evs">Нет задач</div>';
   l.innerHTML=dayStatusBar(selDay.key)+evHtml+`<div class="add-month-btn" onclick="openCalAdd(null,'${selDay.key}')">＋ Добавить задачу</div>`;
