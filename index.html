@@ -287,10 +287,35 @@ body{background:var(--bg);color:var(--t1);font-family:'Onest',sans-serif;font-si
 .month-right-title{font-family:'Unbounded',sans-serif;font-size:12px;font-weight:600;margin-bottom:12px;color:var(--t2)}
 /* ── Статус дня ── */
 .dstat-bar{margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--b1)}
-.dstat-label{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);margin-bottom:7px}
+.dstat-label-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
+.dstat-label{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--t3)}
+.dstat-manage-btn{font-size:10px;padding:2px 7px;border-radius:8px;border:1px solid var(--b2);background:none;color:var(--t3);cursor:pointer;font-family:'Onest',sans-serif;transition:all .15s}
+.dstat-manage-btn:hover{color:var(--t1);border-color:var(--b3)}
 .dstat-chips{display:flex;flex-wrap:wrap;gap:6px}
 .dstat-chip{font-size:11px;padding:5px 11px;border-radius:20px;border:1px solid var(--b2);background:var(--s2);color:var(--t2);cursor:pointer;transition:all .15s;font-family:'Onest',sans-serif;white-space:nowrap}
 .dstat-chip:hover{border-color:var(--b3);color:var(--t1)}
+/* Settings modals */
+.settings-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px}
+.settings-modal{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r2);padding:24px;width:100%;max-width:420px;max-height:80vh;overflow-y:auto;display:flex;flex-direction:column;gap:16px}
+.settings-modal-title{font-family:'Unbounded',sans-serif;font-size:14px;font-weight:700;color:var(--t1)}
+.sett-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--r);border:1px solid var(--b1);background:var(--s2)}
+.sett-item-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0}
+.sett-item-label{flex:1;font-size:13px;color:var(--t1);font-family:'Onest',sans-serif}
+.sett-item-btn{font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--b2);background:none;color:var(--t3);cursor:pointer;font-family:'Onest',sans-serif;transition:all .15s}
+.sett-item-btn:hover{color:var(--t1);border-color:var(--b3)}
+.sett-item-btn.del:hover{color:var(--coral);border-color:var(--coral)}
+.sett-add-form{display:flex;flex-direction:column;gap:8px;padding:12px;border:1px solid var(--b1);border-radius:var(--r);background:var(--s2)}
+.sett-add-row{display:flex;gap:8px;align-items:center}
+.sett-add-inp{flex:1;padding:7px 10px;border-radius:var(--r);border:1px solid var(--b2);background:var(--s1);color:var(--t1);font-size:13px;font-family:'Onest',sans-serif}
+.sett-color-inp{width:38px;height:32px;border-radius:var(--r);border:1px solid var(--b2);background:var(--s1);cursor:pointer;padding:2px}
+.sett-add-btn{padding:7px 14px;border-radius:var(--r);border:none;background:var(--magenta);color:#fff;font-size:12px;font-family:'Onest',sans-serif;font-weight:600;cursor:pointer;white-space:nowrap}
+.sett-add-btn:hover{opacity:.85}
+.sett-type-preview{width:60px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0}
+/* cmType row with manage button */
+.cmtype-row{display:flex;gap:6px;align-items:center}
+.cmtype-row select{flex:1}
+.cmtype-manage{padding:7px 10px;border-radius:var(--r);border:1px solid var(--b2);background:var(--s2);color:var(--t3);cursor:pointer;font-size:13px;transition:all .15s;flex-shrink:0}
+.cmtype-manage:hover{color:var(--t1);border-color:var(--b3)}
 .dcol-status{display:inline-block;font-size:8px;font-weight:700;color:#fff;padding:1px 6px;border-radius:6px;margin-left:6px;vertical-align:middle;letter-spacing:.02em;text-transform:uppercase}
 .mday-status{border-left-width:3px;border-left-style:solid}
 .mday-status-badge{display:block;font-size:7px;font-weight:700;color:#fff;padding:0 4px;border-radius:4px;margin:1px 0 0;width:fit-content;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:.02em}
@@ -1789,12 +1814,10 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
       <div class="mf"><div class="ml">Дата</div><input class="mi" id="cmDate" type="date"></div>
     </div>
     <div class="mf"><div class="ml">Тип</div>
-      <select class="mi" id="cmType">
-        <option value="ev-avito">Авито</option><option value="ev-ii">Обучение ИИ</option>
-        <option value="ev-blog">Блог</option><option value="ev-land">Участок</option>
-        <option value="ev-ritual">Ритуал</option><option value="ev-intel">Насмотренность</option>
-        <option value="ev-rest">Отдых</option><option value="ev-eve">Личное</option><option value="ev-custom">Другое</option>
-      </select>
+      <div class="cmtype-row">
+        <select class="mi" id="cmType"></select>
+        <button class="cmtype-manage" onclick="openETManager()" title="Управление типами">⚙</button>
+      </div>
     </div>
     <div class="mi-row">
       <div class="mf"><div class="ml">Приоритет</div>
@@ -1830,6 +1853,47 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
       <button class="mbtn danger" id="fmDel" onclick="delFocus()" style="display:none">Удалить</button>
       <button class="mbtn secondary" onclick="closeFocusModal()">Отмена</button>
       <button class="mbtn primary" onclick="saveFocus()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- DAY STATUS MANAGER -->
+<div class="settings-overlay" id="dsManagerOverlay" style="display:none" onclick="if(event.target===this)closeDSManager()">
+  <div class="settings-modal">
+    <div class="settings-modal-title">Статусы дня</div>
+    <div id="dsManagerList"></div>
+    <div class="sett-add-form" id="dsAddForm">
+      <div style="font-size:11px;color:var(--t3);font-family:'Onest',sans-serif;text-transform:uppercase;letter-spacing:.06em">Добавить / редактировать</div>
+      <input type="hidden" id="dsEditId">
+      <div class="sett-add-row">
+        <input class="sett-add-inp" id="dsAddLabel" placeholder="Название статуса" maxlength="24">
+        <input type="color" class="sett-color-inp" id="dsAddColor" value="#3B82F6">
+        <button class="sett-add-btn" onclick="saveDSItem()">Сохранить</button>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:flex-end">
+      <button class="mbtn secondary" onclick="closeDSManager()">Закрыть</button>
+    </div>
+  </div>
+</div>
+
+<!-- TASK TYPE MANAGER -->
+<div class="settings-overlay" id="etManagerOverlay" style="display:none" onclick="if(event.target===this)closeETManager()">
+  <div class="settings-modal">
+    <div class="settings-modal-title">Типы задач</div>
+    <div id="etManagerList"></div>
+    <div class="sett-add-form">
+      <div style="font-size:11px;color:var(--t3);font-family:'Onest',sans-serif;text-transform:uppercase;letter-spacing:.06em">Добавить / редактировать</div>
+      <input type="hidden" id="etEditId">
+      <div class="sett-add-row">
+        <input class="sett-add-inp" id="etAddLabel" placeholder="Название типа" maxlength="24" oninput="updateETPreview()">
+        <input type="color" class="sett-color-inp" id="etAddColor" value="#3B82F6" oninput="updateETPreview()">
+        <div class="sett-type-preview" id="etPreview" style="background:#3B82F610;color:#3B82F6">Тип</div>
+        <button class="sett-add-btn" onclick="saveETItem()">Сохранить</button>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:flex-end">
+      <button class="mbtn secondary" onclick="closeETManager()">Закрыть</button>
     </div>
   </div>
 </div>
@@ -2073,14 +2137,21 @@ function loadCalLS(){
   bumpNid(calEvs);Object.values(mevs).forEach(arr=>bumpNid(arr));
 }
 
-// ── Статусы дня (Выходной/Офис/Дом/В дороге/В городе) ──────────────────────
-const DAY_STATUS={
-  weekend:{label:'Выходной',color:'#CC3355'},
-  office :{label:'Офис',    color:'#3B82F6'},
-  home   :{label:'Дом',     color:'#1D8A4E'},
-  road   :{label:'В дороге', color:'#E8A020'},
-  city   :{label:'В городе', color:'#A855F7'}
-};
+// ── Статусы дня ──────────────────────────────────────────────────────────────
+const DS_DEFAULTS=[
+  {id:'weekend',label:'Выходной',color:'#CC3355',builtin:true},
+  {id:'office', label:'Офис',    color:'#3B82F6',builtin:true},
+  {id:'home',   label:'Дом',     color:'#1D8A4E',builtin:true},
+  {id:'road',   label:'В дороге',color:'#E8A020',builtin:true},
+  {id:'city',   label:'В городе',color:'#A855F7',builtin:true}
+];
+let dsDefs=[...DS_DEFAULTS];
+function saveDSDefs(){try{localStorage.setItem('dsDefs',JSON.stringify(dsDefs));}catch(e){}}
+function loadDSDefs(){try{const d=localStorage.getItem('dsDefs');if(d)dsDefs=JSON.parse(d);}catch(e){}}
+function getDSById(id){return dsDefs.find(x=>x.id===id);}
+// Backward compat: DAY_STATUS proxy
+const DAY_STATUS=new Proxy({},{get(_,k){const d=getDSById(k);return d||undefined;}});
+
 let dayStatuses={};
 function saveDayStatuses(){try{localStorage.setItem('dayStatuses',JSON.stringify(dayStatuses));}catch(e){}}
 function loadDayStatuses(){try{const d=localStorage.getItem('dayStatuses');if(d)dayStatuses=JSON.parse(d);}catch(e){}}
@@ -2092,19 +2163,175 @@ function setDayStatus(dk,key){
 }
 function dayStatusBar(dk){
   const cur=dayStatuses[dk]||'';
-  const chips=Object.keys(DAY_STATUS).map(k=>{
-    const s=DAY_STATUS[k];const active=cur===k;
+  const chips=dsDefs.map(s=>{
+    const active=cur===s.id;
     const style=active?`background:${s.color};border-color:${s.color};color:#fff`:'';
-    return`<button class="dstat-chip${active?' active':''}" style="${style}" onclick="setDayStatus('${dk}','${k}')">${s.label}</button>`;
+    return`<button class="dstat-chip${active?' active':''}" style="${style}" onclick="setDayStatus('${dk}','${s.id}')">${s.label}</button>`;
   }).join('');
-  return`<div class="dstat-bar"><div class="dstat-label">Статус дня</div><div class="dstat-chips">${chips}</div></div>`;
+  return`<div class="dstat-bar"><div class="dstat-label-row"><div class="dstat-label">Статус дня</div><button class="dstat-manage-btn" onclick="openDSManager()">⚙ Настроить</button></div><div class="dstat-chips">${chips}</div></div>`;
+}
+
+// DS Manager
+function openDSManager(){
+  document.getElementById('dsManagerOverlay').style.display='flex';
+  renderDSManager();
+}
+function closeDSManager(){
+  document.getElementById('dsManagerOverlay').style.display='none';
+  document.getElementById('dsEditId').value='';
+  document.getElementById('dsAddLabel').value='';
+  document.getElementById('dsAddColor').value='#3B82F6';
+}
+function renderDSManager(){
+  const list=document.getElementById('dsManagerList');
+  list.innerHTML=dsDefs.map(s=>`
+    <div class="sett-item">
+      <div class="sett-item-dot" style="background:${s.color}"></div>
+      <div class="sett-item-label">${s.label}</div>
+      <button class="sett-item-btn" onclick="editDSItem('${s.id}')">✏ Изм.</button>
+      ${s.builtin?'<button class="sett-item-btn del" onclick="resetDSItem(\''+s.id+'\')" title="Сбросить к умолчанию">↺</button>':'<button class="sett-item-btn del" onclick="deleteDSItem(\''+s.id+'\')">✕</button>'}
+    </div>`).join('');
+}
+function editDSItem(id){
+  const s=getDSById(id);if(!s)return;
+  document.getElementById('dsEditId').value=id;
+  document.getElementById('dsAddLabel').value=s.label;
+  document.getElementById('dsAddColor').value=s.color;
+  document.getElementById('dsAddLabel').focus();
+}
+function saveDSItem(){
+  const id=document.getElementById('dsEditId').value;
+  const label=document.getElementById('dsAddLabel').value.trim();
+  const color=document.getElementById('dsAddColor').value;
+  if(!label)return;
+  if(id){
+    const s=getDSById(id);if(s){s.label=label;s.color=color;}
+  } else {
+    dsDefs.push({id:'ds_'+Date.now(),label,color,builtin:false});
+  }
+  saveDSDefs();
+  document.getElementById('dsEditId').value='';
+  document.getElementById('dsAddLabel').value='';
+  document.getElementById('dsAddColor').value='#3B82F6';
+  renderDSManager();
+}
+function deleteDSItem(id){
+  dsDefs=dsDefs.filter(s=>s.id!==id);
+  Object.keys(dayStatuses).forEach(dk=>{if(dayStatuses[dk]===id)delete dayStatuses[dk];});
+  saveDSDefs();saveDayStatuses();renderDSManager();
+}
+function resetDSItem(id){
+  const def=DS_DEFAULTS.find(s=>s.id===id);if(!def)return;
+  const s=getDSById(id);if(s){s.label=def.label;s.color=def.color;}
+  saveDSDefs();renderDSManager();
+}
+
+// ── Типы задач ────────────────────────────────────────────────────────────────
+const ET_DEFAULTS=[
+  {id:'ev-avito', label:'Авито',          color:'#3B82F6',builtin:true},
+  {id:'ev-ii',    label:'Обучение ИИ',    color:'#22C55E',builtin:true},
+  {id:'ev-blog',  label:'Блог',           color:'#A855F7',builtin:true},
+  {id:'ev-land',  label:'Участок',        color:'#F59E0B',builtin:true},
+  {id:'ev-ritual',label:'Ритуал',         color:'#F43F5E',builtin:true},
+  {id:'ev-intel', label:'Насмотренность', color:'#14B8A6',builtin:true},
+  {id:'ev-rest',  label:'Отдых',          color:'#6B7280',builtin:true},
+  {id:'ev-eve',   label:'Личное',         color:'#F43F5E',builtin:true},
+  {id:'ev-client',label:'Клиент',         color:'#C4306A',builtin:true},
+  {id:'ev-custom',label:'Другое',         color:'#3B82F6',builtin:true}
+];
+let etDefs=[...ET_DEFAULTS];
+function saveETDefs(){try{localStorage.setItem('etDefs',JSON.stringify(etDefs));}catch(e){}}
+function loadETDefs(){try{const d=localStorage.getItem('etDefs');if(d)etDefs=JSON.parse(d);}catch(e){}}
+function getETById(id){return etDefs.find(x=>x.id===id);}
+function getETColor(id){const t=getETById(id);return t?t.color:'#3B82F6';}
+function getETLabel(id){const t=getETById(id);return t?t.label:'Другое';}
+
+function populateCmType(selectedVal){
+  const sel=document.getElementById('cmType');if(!sel)return;
+  sel.innerHTML=etDefs.map(t=>`<option value="${t.id}"${t.id===selectedVal?' selected':''}>${t.label}</option>`).join('');
+}
+
+// ET Manager
+function openETManager(){
+  document.getElementById('etManagerOverlay').style.display='flex';
+  renderETManager();
+}
+function closeETManager(){
+  document.getElementById('etManagerOverlay').style.display='none';
+  document.getElementById('etEditId').value='';
+  document.getElementById('etAddLabel').value='';
+  document.getElementById('etAddColor').value='#3B82F6';
+  updateETPreview();
+}
+function renderETManager(){
+  const list=document.getElementById('etManagerList');
+  list.innerHTML=etDefs.map(t=>`
+    <div class="sett-item">
+      <div class="sett-item-dot" style="background:${t.color}"></div>
+      <div class="sett-item-label">${t.label}</div>
+      <button class="sett-item-btn" onclick="editETItem('${t.id}')">✏ Изм.</button>
+      ${t.builtin?'<button class="sett-item-btn del" onclick="resetETItem(\''+t.id+'\')" title="Сбросить">↺</button>':'<button class="sett-item-btn del" onclick="deleteETItem(\''+t.id+'\')">✕</button>'}
+    </div>`).join('');
+}
+function editETItem(id){
+  const t=getETById(id);if(!t)return;
+  document.getElementById('etEditId').value=id;
+  document.getElementById('etAddLabel').value=t.label;
+  document.getElementById('etAddColor').value=t.color;
+  updateETPreview();
+  document.getElementById('etAddLabel').focus();
+}
+function updateETPreview(){
+  const color=document.getElementById('etAddColor').value;
+  const label=document.getElementById('etAddLabel').value||'Тип';
+  const p=document.getElementById('etPreview');if(!p)return;
+  p.style.background=color+'20';p.style.color=color;p.textContent=label.slice(0,6);
+}
+function saveETItem(){
+  const id=document.getElementById('etEditId').value;
+  const label=document.getElementById('etAddLabel').value.trim();
+  const color=document.getElementById('etAddColor').value;
+  if(!label)return;
+  if(id){
+    const t=getETById(id);if(t){t.label=label;t.color=color;}
+  } else {
+    etDefs.push({id:'et_'+Date.now(),label,color,builtin:false});
+  }
+  saveETDefs();
+  document.getElementById('etEditId').value='';
+  document.getElementById('etAddLabel').value='';
+  document.getElementById('etAddColor').value='#3B82F6';
+  updateETPreview();
+  renderETManager();
+  populateCmType(document.getElementById('cmType').value);
+}
+function deleteETItem(id){
+  etDefs=etDefs.filter(t=>t.id!==id);
+  saveETDefs();renderETManager();
+  populateCmType(document.getElementById('cmType').value);
+}
+function resetETItem(id){
+  const def=ET_DEFAULTS.find(t=>t.id===id);if(!def)return;
+  const t=getETById(id);if(t){t.label=def.label;t.color=def.color;}
+  saveETDefs();renderETManager();
+  populateCmType(document.getElementById('cmType').value);
 }
 // ── Week helpers ──────────────────────────────────────────────────────────────
 function getMonday(d){const dt=new Date(d);dt.setHours(0,0,0,0);const dow=(dt.getDay()+6)%7;dt.setDate(dt.getDate()-dow);return dt;}
 function weekKey(mon){return mon.getFullYear()+'-'+String(mon.getMonth()+1).padStart(2,'0')+'-'+String(mon.getDate()).padStart(2,'0');}
 function weekDayKey(mon,di){const d=new Date(mon);d.setDate(d.getDate()+di);return weekKey(d);}
 function weekLabel(mon){const d2=new Date(mon);d2.setDate(d2.getDate()+6);const mo1=MONTHS[mon.getMonth()],mo2=MONTHS[d2.getMonth()];if(mo1===mo2)return mon.getDate()+'–'+d2.getDate()+' '+mo1;return mon.getDate()+' '+mo1.slice(0,3)+'–'+d2.getDate()+' '+mo2.slice(0,3);}
-const TYPE_LABELS={'ev-avito':'Авито','ev-ii':'ИИ','ev-blog':'Блог','ev-land':'Участок','ev-ritual':'Ритуал','ev-intel':'Насмотр','ev-rest':'Отдых','ev-eve':'Личное','ev-custom':'Другое','ev-client':'Клиент'};
+const TYPE_LABELS=new Proxy({},{get(_,k){return getETLabel(k);}});
+function evColorStyle(cl){
+  if(!cl||cl.startsWith('ev-'))return'';
+  const c=getETColor(cl);
+  return`background:${c}20;color:${c};border:1px solid ${c}28`;
+}
+function mrevColorStyle(cl){
+  if(!cl||cl.startsWith('ev-'))return'';
+  const c=getETColor(cl);
+  return`background:${c}12;border-left:3px solid ${c}`;
+}
 function chWeek(dir){curWeek=getMonday(new Date(curWeek));curWeek.setDate(curWeek.getDate()+dir*7);renderWeek();}
 function loadWeekNote(){const ta=document.getElementById('weekNotesTA');if(!ta)return;ta.value=localStorage.getItem('weekNote_'+weekKey(curWeek))||'';}
 function toggleMEvDone(key,id){const e=(mevs[key]||[]).find(x=>x.id===id);if(!e)return;e.done=!e.done;saveCalLS();renderWeek();if(calView==='month')renderMonth();}
@@ -2305,7 +2532,7 @@ function renderWeek(){
     const pendingBadge=pendingCnt?`<span class="dcol-badge">${pendingCnt}</span>`:'';
     const col=document.createElement('div');col.className='day-col'+(selWeekDay===dk?' sel-day':'');
     col.innerHTML=`<div class="day-col-head${isToday?' dcol-today':''}"${stStyle} onclick="selectWeekDay('${dk}')"><div class="dcol-name">${DAYS[di]}${stBadge}${pendingBadge}</div><div class="dcol-date">${d}</div></div>
-      <div class="day-col-body">${de.map(e=>{const isCE=e.day!==undefined;const isCT=e._ctask;const isGhost=!!e._ghost;const ef=isGhost?'':(isCE?`openCalEdit(${e.id})`:isCT?`openClientDetail(${e._cid})`:`openCalEditM('${dk}',${e.id})`);const tf=isGhost?'':(isCE?`toggleCalEvDone(${e.id})`:isCT?`toggleClientTaskFromCal(${e._cid},${e.id})`:`toggleMEvDone('${dk}',${e.id})`);return`<div class="cal-ev ${e.cl}${e.done?' ev-done':''}${isGhost?' ev-ghost':''}" title="${isGhost?'Дедлайн задачи из '+e._ghostFrom:''}">
+      <div class="day-col-body">${de.map(e=>{const isCE=e.day!==undefined;const isCT=e._ctask;const isGhost=!!e._ghost;const ef=isGhost?'':(isCE?`openCalEdit(${e.id})`:isCT?`openClientDetail(${e._cid})`:`openCalEditM('${dk}',${e.id})`);const tf=isGhost?'':(isCE?`toggleCalEvDone(${e.id})`:isCT?`toggleClientTaskFromCal(${e._cid},${e.id})`:`toggleMEvDone('${dk}',${e.id})`);return`<div class="cal-ev ${e.cl}${e.done?' ev-done':''}${isGhost?' ev-ghost':''}" style="${evColorStyle(e.cl)}" title="${isGhost?'Дедлайн задачи из '+e._ghostFrom:''}">
         <span class="ev-time-small">${e.t}</span>
         <span class="ev-tx"${ef?` onclick="${ef}"`:''}>${e.tx}</span>
         ${priorityBadge(e)}
@@ -2332,13 +2559,13 @@ function renderWeekRight(){
   const doneCnt=de.filter(e=>e.done).length;
   const st=dayStatuses[selWeekDay];
   t.innerHTML=`${dd} ${MONTHS[mm-1]} · ${doneCnt}/${de.length} выполнено`;
-  const cmap={'ev-ritual':'#f43f5e','ev-intel':'#14b8a6','ev-avito':'#3b82f6','ev-ii':'#22c55e','ev-blog':'#a855f7','ev-land':'#f59e0b','ev-rest':'#6b7280','ev-eve':'#f43f5e','ev-custom':'#3b82f6','ev-client':'#C4306A'};
+  const cmap=new Proxy({},{get(_,k){return getETColor(k);}});
   const evHtml=de.length?de.map(e=>{
     const isWeek=e.day!==undefined;const isCT=e._ctask;
     const chkFn=isWeek?`toggleCalEvDone(${e.id})`:isCT?`toggleClientTaskFromCal(${e._cid},${e.id})`:`toggleMEvDoneWeek('${selWeekDay}',${e.id})`;
     const editFn=isWeek?`openCalEdit(${e.id})`:isCT?`openClientDetail(${e._cid})`:`openCalEditM('${selWeekDay}',${e.id})`;
     const canDel=!isWeek&&!isCT;
-    return`<div class="mrev ${e.cl}${e.done?' ev-done':''}">
+    return`<div class="mrev ${e.cl}${e.done?' ev-done':''}" style="${mrevColorStyle(e.cl)}">
       <span class="mrev-chk" onclick="${chkFn}">${e.done?'✓':'○'}</span>
       <span class="mrev-time">${e.t}</span>
       <div class="mrev-dot" style="background:${cmap[e.cl]||'#3b82f6'}"></div>
@@ -2436,7 +2663,7 @@ function renderWeekTaskList(){
         return`<div class="tl-row${e.done?' tl-done':''}" ${isDraggable?`draggable="true" ondragstart="tlDragStart(event,${e.id},'${dk}')" ondragend="tlDragEnd(event)"`:''}>
           <span class="tl-chk" onclick="${chkFn}" title="${e.done?'Снять':'Выполнено'}">${e.done?'✓':''}</span>
           <span class="tl-time">${e.t}</span>
-          <span class="tl-type ${e.cl}" style="font-size:8.5px;font-weight:600;padding:2px 5px;border-radius:4px">${typeLabel}</span>
+          <span class="tl-type ${e.cl}" style="font-size:8.5px;font-weight:600;padding:2px 5px;border-radius:4px;${evColorStyle(e.cl)}">${typeLabel}</span>
           <span class="tl-name" onclick="${editFn}">${e.tx}</span>
           <span class="tl-prio">${e.priority?priorityBadge(e):''}</span>
           ${dlTxt?`<span class="tl-dl">до ${dlTxt}</span>`:'<span class="tl-dl"></span>'}
@@ -2526,7 +2753,7 @@ function renderMonthTaskList(){
         return`<div class="tl-row${e.done?' tl-done':''}" ${isDraggable?`draggable="true" ondragstart="mtlDragStart(event,${e.id},'${dk}')" ondragend="mtlDragEnd(event)"`:''}>
           <span class="tl-chk" onclick="${chkFn}" title="${e.done?'Снять':'Выполнено'}">${e.done?'✓':''}</span>
           <span class="tl-time">${e.t}</span>
-          <span class="tl-type ${e.cl}" style="font-size:8.5px;font-weight:600;padding:2px 5px;border-radius:4px">${typeLabel}</span>
+          <span class="tl-type ${e.cl}" style="font-size:8.5px;font-weight:600;padding:2px 5px;border-radius:4px;${evColorStyle(e.cl)}">${typeLabel}</span>
           <span class="tl-name" onclick="${editFn}">${e.tx}</span>
           <span class="tl-prio">${e.priority?priorityBadge(e):''}</span>
           ${dlTxt?`<span class="tl-dl">до ${dlTxt}</span>`:'<span class="tl-dl"></span>'}
@@ -2597,13 +2824,13 @@ function renderMRight(){
   const de=getDayEvs(selDay.y,selDay.m,selDay.d);
   const doneCnt=de.filter(e=>e.done).length;
   t.textContent=`${selDay.d} ${MONTHS[selDay.m]} · ${doneCnt}/${de.length} выполнено`;
-  const cmap={'ev-ritual':'#f43f5e','ev-intel':'#14b8a6','ev-avito':'#3b82f6','ev-ii':'#22c55e','ev-blog':'#a855f7','ev-land':'#f59e0b','ev-rest':'#6b7280','ev-eve':'#f43f5e','ev-custom':'#3b82f6','ev-client':'#C4306A'};
+  const cmap=new Proxy({},{get(_,k){return getETColor(k);}});
   const evHtml=de.length?de.map(e=>{
     const isWeek=e.day!==undefined;const isCT=e._ctask;
     const chkFn=isWeek?`toggleCalEvDone(${e.id})`:isCT?`toggleClientTaskFromCal(${e._cid},${e.id})`:`toggleCalEvDoneM('${selDay.key}',${e.id})`;
     const editFn=isWeek?`openCalEdit(${e.id})`:isCT?`openClientDetail(${e._cid})`:`openCalEditM('${selDay.key}',${e.id})`;
     const canDel=!isWeek&&!isCT;
-    return`<div class="mrev ${e.cl}${e.done?' ev-done':''}">
+    return`<div class="mrev ${e.cl}${e.done?' ev-done':''}" style="${mrevColorStyle(e.cl)}">
       <span class="mrev-chk" onclick="${chkFn}">${e.done?'✓':'○'}</span>
       <span class="mrev-time">${e.t}</span>
       <div class="mrev-dot" style="background:${cmap[e.cl]||'#3b82f6'}"></div>
@@ -2623,7 +2850,7 @@ function openCalAdd(day,dateKey){
   document.getElementById('calModalTitle').textContent='Добавить задачу';
   document.getElementById('cmTxt').value='';document.getElementById('cmTime').value='10:00';
   document.getElementById('cmDate').value=dateKey||dateKeyFromDate(new Date());
-  document.getElementById('cmType').value='ev-custom';
+  populateCmType('ev-custom');
   document.getElementById('cmPriority').value='';
   document.getElementById('cmDeadline').value='';
   document.getElementById('cmDel').style.display='none';
@@ -2637,7 +2864,7 @@ function openCalEdit(id){
   document.getElementById('cmTxt').value=e.tx;document.getElementById('cmTime').value=e.t;
   const evDate=new Date(curWeek);evDate.setDate(evDate.getDate()+e.day);
   document.getElementById('cmDate').value=dateKeyFromDate(evDate);
-  document.getElementById('cmType').value=e.cl;
+  populateCmType(e.cl);
   document.getElementById('cmPriority').value=e.priority||'';
   document.getElementById('cmDeadline').value=e.deadline||'';
   document.getElementById('cmDel').style.display='block';
@@ -2650,7 +2877,7 @@ function openCalEditM(dk,id){
   document.getElementById('calModalTitle').textContent='Редактировать задачу';
   document.getElementById('cmTxt').value=e.tx;document.getElementById('cmTime').value=e.t;
   document.getElementById('cmDate').value=dk;
-  document.getElementById('cmType').value=e.cl||'ev-custom';
+  populateCmType(e.cl||'ev-custom');
   document.getElementById('cmPriority').value=e.priority||'';
   document.getElementById('cmDeadline').value=e.deadline||'';
   document.getElementById('cmDel').style.display='block';
@@ -4136,7 +4363,10 @@ loadChatHistory();
 loadWeekMonthNotes();
 loadGoalsLS();
 loadCalLS();
+loadDSDefs();
 loadDayStatuses();
+loadETDefs();
+populateCmType('ev-custom');
 loadClientsLS();
 loadBytovkaData();
 loadFinData();
