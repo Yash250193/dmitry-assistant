@@ -246,7 +246,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Onest',sans-serif;font-si
 .tl-row.tl-done .tl-chk{background:var(--blue);border-color:var(--blue);color:#fff}
 .tl-time{font-size:9px;color:var(--t3);white-space:nowrap}
 .tl-type{font-size:8.5px;font-weight:600;padding:2px 6px;border-radius:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:64px}
-.tl-name{font-size:11px;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.tl-name{font-size:11px;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;display:flex;flex-direction:column;align-items:flex-start}
 .tl-name:hover{color:var(--blue)}
 .tl-prio{flex-shrink:0}
 .tl-dl{font-size:9px;color:var(--t3);white-space:nowrap;flex-shrink:0}
@@ -470,6 +470,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Onest',sans-serif;font-si
 .ats-add-submit:hover{opacity:.85}
 .tl-dl.tl-overdue{color:var(--coral);font-weight:700}
 .tl-dl.tl-today{color:var(--magenta);font-weight:700}
+.tl-comment{display:block;font-size:10px;color:var(--t3);margin-top:2px;line-height:1.4;white-space:pre-wrap;word-break:break-word;font-weight:400}
 
 /* CLIENT DETAIL PANEL (right side) */
 .client-detail{display:none;position:fixed;top:52px;right:0;bottom:0;width:360px;background:var(--s1);border-left:1px solid var(--b1);z-index:50;flex-direction:column;animation:slideInR .2s ease}
@@ -1932,6 +1933,10 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
       <div class="ml">Клиент <span style="font-size:9px;color:var(--t3);font-weight:400">(необяз.)</span></div>
       <select class="mi" id="cmClient" onchange="onCmClientChange()"></select>
     </div>
+    <div class="mf">
+      <div class="ml">Комментарий <span style="font-size:9px;color:var(--t3);font-weight:400">(необяз.)</span></div>
+      <textarea class="mi" id="cmComment" rows="2" placeholder="Свободный текст..." style="resize:vertical;min-height:52px;font-family:'Onest',sans-serif;font-size:13px"></textarea>
+    </div>
     <div class="modal-btns">
       <button class="mbtn danger" id="cmDel" onclick="delCalEv()" style="display:none">Удалить</button>
       <button class="mbtn secondary" onclick="closeCalModal()">Отмена</button>
@@ -2764,6 +2769,7 @@ function renderDayTimeGrid(dateKey,evs,chkFnOf,editFnOf,delFnOf,canDelOf,addDate
     const chkFn=chkFnOf(e);const editFn=editFnOf(e);const delFn=delFnOf(e);const canDel=canDelOf(e);
     evHtml+=`<div class="day-tg-ev${e.done?' ev-done':''}" style="top:${top}px;height:${height}px;left:${left};width:${width};background:${color}1e;color:${color};border-left-color:${color}" onclick="${editFn}">
       <div class="day-tg-ev-title">${e.tx}</div>
+      ${tall&&e.comment?`<div style="font-size:9px;opacity:.7;margin-top:2px;line-height:1.3;white-space:pre-wrap;word-break:break-word">${e.comment}</div>`:''}
       ${tall?`<div class="day-tg-ev-time">${timeLabel}</div>`:''}
       ${tall?`<div class="day-tg-ev-actions" onclick="event.stopPropagation()">
         <button class="day-tg-ev-btn" onclick="${chkFn}">${e.done?'↩':'✓ Готово'}</button>
@@ -2882,7 +2888,7 @@ function renderNodateGroup(dragStartFn,dragEndFn,dropFn){
       <span class="tl-chk" onclick="toggleNodateDone(${e.id})" title="${e.done?'Снять':'Выполнено'}">${e.done?'✓':''}</span>
       <span class="tl-time">${e.t}</span>
       <span class="tl-type ${e.cl}" style="font-size:8.5px;font-weight:600;padding:2px 5px;border-radius:4px;${evColorStyle(e.cl)}">${typeLabel}</span>
-      <span class="tl-name" onclick="openCalEditM('no-date',${e.id})">${e.tx}</span>
+      <span class="tl-name" onclick="openCalEditM('no-date',${e.id})"><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">${e.tx}</span>${e.comment?`<span class="tl-comment">${e.comment}</span>`:''}</span>
       <span class="tl-prio">${e.priority?priorityBadge(e):''}</span>
       ${dlTxt?`<span class="tl-dl">до ${dlTxt}</span>`:'<span class="tl-dl"></span>'}
       <button class="tl-del" title="Удалить" onclick="delNodateEv(${e.id})">✕</button>
@@ -2932,7 +2938,7 @@ function renderWeekTaskList(){
           <span class="tl-chk" onclick="${chkFn}" title="${e.done?'Снять':'Выполнено'}">${e.done?'✓':''}</span>
           <span class="tl-time">${e.t}</span>
           <span class="tl-type ${e.cl}" style="font-size:8.5px;font-weight:600;padding:2px 5px;border-radius:4px;${evColorStyle(e.cl)}">${typeLabel}</span>
-          <span class="tl-name" onclick="${editFn}">${e.tx}</span>
+          <span class="tl-name" onclick="${editFn}"><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">${e.tx}</span>${e.comment?`<span class="tl-comment">${e.comment}</span>`:''}</span>
           <span class="tl-prio">${e.priority?priorityBadge(e):''}</span>
           ${dlTxt?`<span class="tl-dl">до ${dlTxt}</span>`:'<span class="tl-dl"></span>'}
           <button class="tl-del" title="Удалить"${delFn} style="${isCE||isCT?'visibility:hidden':''}">✕</button>
@@ -3023,7 +3029,7 @@ function renderMonthTaskList(){
           <span class="tl-chk" onclick="${chkFn}" title="${e.done?'Снять':'Выполнено'}">${e.done?'✓':''}</span>
           <span class="tl-time">${e.t}</span>
           <span class="tl-type ${e.cl}" style="font-size:8.5px;font-weight:600;padding:2px 5px;border-radius:4px;${evColorStyle(e.cl)}">${typeLabel}</span>
-          <span class="tl-name" onclick="${editFn}">${e.tx}</span>
+          <span class="tl-name" onclick="${editFn}"><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">${e.tx}</span>${e.comment?`<span class="tl-comment">${e.comment}</span>`:''}</span>
           <span class="tl-prio">${e.priority?priorityBadge(e):''}</span>
           ${dlTxt?`<span class="tl-dl">до ${dlTxt}</span>`:'<span class="tl-dl"></span>'}
           <button class="tl-del" title="Удалить"${delFn} style="${isCE||isCT?'visibility:hidden':''}">✕</button>
@@ -3114,6 +3120,7 @@ function openCalAdd(day,dateKey){
   populateCmType('ev-custom','');
   document.getElementById('cmPriority').value='';
   document.getElementById('cmDeadline').value='';
+  document.getElementById('cmComment').value='';
   document.getElementById('cmDel').style.display='none';
   document.getElementById('cmDel').onclick=delCalEv;
   document.getElementById('calOverlay').classList.add('show');
@@ -3129,6 +3136,7 @@ function openCalEdit(id){
   populateCmType(e.cl,e.clientId||'');
   document.getElementById('cmPriority').value=e.priority||'';
   document.getElementById('cmDeadline').value=e.deadline||'';
+  document.getElementById('cmComment').value=e.comment||'';
   document.getElementById('cmDel').style.display='block';
   document.getElementById('cmDel').onclick=delCalEv;
   document.getElementById('calOverlay').classList.add('show');
@@ -3145,6 +3153,7 @@ function openCalEditM(dk,id){
   populateCmType(e.cl||'ev-custom',e.clientId||'');
   document.getElementById('cmPriority').value=e.priority||'';
   document.getElementById('cmDeadline').value=e.deadline||'';
+  document.getElementById('cmComment').value=e.comment||'';
   document.getElementById('cmDel').style.display='block';
   document.getElementById('cmDel').onclick=()=>{if(mevs[dk])mevs[dk]=mevs[dk].filter(x=>x.id!==id);saveCalLS();closeCalModal();renderWeek();if(calView==='month'){renderMonth();renderMonthStats();renderMonthTaskList();}};
   document.getElementById('calOverlay').classList.add('show');
@@ -3158,6 +3167,7 @@ function saveCalEv(){
   const cl=document.getElementById('cmType').value;
   const priority=document.getElementById('cmPriority').value||undefined;
   const deadline=document.getElementById('cmDeadline').value||undefined;
+  const comment=document.getElementById('cmComment').value.trim()||undefined;
   const rawDate=document.getElementById('cmDate').value;
   const selectedDate=rawDate||'no-date';
   const clientIdRaw=document.getElementById('cmClient').value;
@@ -3166,11 +3176,11 @@ function saveCalEv(){
   if(calEditId){
     const e=calEvs.find(x=>x.id===calEditId);
     if(e){
-      e.tx=tx;e.t=t;e.endTime=endTime;e.cl=cl;e.priority=priority;e.deadline=deadline;e.clientId=clientId;
+      e.tx=tx;e.t=t;e.endTime=endTime;e.cl=cl;e.priority=priority;e.deadline=deadline;e.comment=comment;e.clientId=clientId;
       const evD=new Date(selectedDate+'T00:00:00');
       const newDi=Math.round((evD-curWeek)/86400000);
       if(newDi>=0&&newDi<7){e.day=newDi;}
-      else{calEvs=calEvs.filter(x=>x.id!==calEditId);if(!mevs[selectedDate])mevs[selectedDate]=[];mevs[selectedDate].push({id:nid++,t,endTime,tx,cl,priority,deadline,clientId,done:e.done||false});}
+      else{calEvs=calEvs.filter(x=>x.id!==calEditId);if(!mevs[selectedDate])mevs[selectedDate]=[];mevs[selectedDate].push({id:nid++,t,endTime,tx,cl,priority,deadline,comment,clientId,done:e.done||false});}
     }
   }else if(calEditDateKey&&calEditMEvId!==null){
     const oldArr=mevs[calEditDateKey]||[];
@@ -3179,7 +3189,7 @@ function saveCalEv(){
     const prevClientId=oldEv?oldEv.clientId:undefined;
     mevs[calEditDateKey]=oldArr.filter(x=>x.id!==calEditMEvId);
     if(!mevs[selectedDate])mevs[selectedDate]=[];
-    mevs[selectedDate].push({id:nid++,t,endTime,tx,cl,priority,deadline,clientId,done});
+    mevs[selectedDate].push({id:nid++,t,endTime,tx,cl,priority,deadline,comment,clientId,done});
     // Если клиент изменился — добавляем к новому (дублируем)
     if(clientId&&clientId!==prevClientId){
       dupTaskToClient(clientId,tx,priority,selectedDate!=='no-date'?selectedDate:undefined);
@@ -3187,7 +3197,7 @@ function saveCalEv(){
   }else{
     // Новое событие
     if(!mevs[selectedDate])mevs[selectedDate]=[];
-    mevs[selectedDate].push({id:nid++,t,endTime,tx,cl,priority,deadline,clientId});
+    mevs[selectedDate].push({id:nid++,t,endTime,tx,cl,priority,deadline,comment,clientId});
     if(clientId)dupTaskToClient(clientId,tx,priority,selectedDate!=='no-date'?selectedDate:undefined);
   }
   saveCalLS();
