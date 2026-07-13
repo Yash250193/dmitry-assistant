@@ -2484,7 +2484,7 @@ function mtlDrop(e,tgtKey){
   const [ev]=src.splice(idx,1);
   if(!mevs[tgtKey])mevs[tgtKey]=[];
   mevs[tgtKey].push(ev);
-  saveCalLS();renderMonth();
+  saveCalLS();if(calView==='month')renderMonth();
   mtlDragId=null;mtlDragSrcKey=null;
 }
 
@@ -2654,11 +2654,11 @@ function openCalEditM(dk,id){
   document.getElementById('cmPriority').value=e.priority||'';
   document.getElementById('cmDeadline').value=e.deadline||'';
   document.getElementById('cmDel').style.display='block';
-  document.getElementById('cmDel').onclick=()=>{if(mevs[dk])mevs[dk]=mevs[dk].filter(x=>x.id!==id);saveCalLS();closeCalModal();renderWeek();renderMonth();};
+  document.getElementById('cmDel').onclick=()=>{if(mevs[dk])mevs[dk]=mevs[dk].filter(x=>x.id!==id);saveCalLS();closeCalModal();renderWeek();if(calView==='month'){renderMonth();renderMonthStats();renderMonthTaskList();}};
   document.getElementById('calOverlay').classList.add('show');
 }
 function closeCalModal(){document.getElementById('calOverlay').classList.remove('show');}
-function delCalEv(){calEvs=calEvs.filter(e=>e.id!==calEditId);saveCalLS();closeCalModal();renderWeek();renderMonth();}
+function delCalEv(){calEvs=calEvs.filter(e=>e.id!==calEditId);saveCalLS();closeCalModal();renderWeek();if(calView==='month')renderMonth();}
 function saveCalEv(){
   const tx=document.getElementById('cmTxt').value.trim();if(!tx)return;
   const t=document.getElementById('cmTime').value||'10:00';
@@ -2690,7 +2690,7 @@ function saveCalEv(){
     mevs[selectedDate].push({id:nid++,t,tx,cl,priority,deadline});
   }
   saveCalLS();
-  closeCalModal();renderWeek();renderMonth();
+  closeCalModal();renderWeek();if(calView==='month'){renderMonth();renderMonthStats();renderMonthTaskList();}
 }
 document.getElementById('calOverlay').onclick=e=>{if(e.target===e.currentTarget)closeCalModal();};
 
