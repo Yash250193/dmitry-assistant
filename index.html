@@ -148,8 +148,9 @@ body{background:var(--bg);color:var(--t1);font-family:'Onest',sans-serif;font-si
 .cvs-btn:last-child{border-radius:0 10px 10px 0;border-left:none}
 .cvs-btn.active{background:var(--magenta);border-color:var(--magenta);color:#fff}
 .cvs-btn:not(.active):hover{color:var(--t1);background:var(--s3)}
-#calViewWeek{flex:1;display:flex;flex-direction:row;overflow:hidden;min-height:0}
-#calViewMonth{flex:1;flex-direction:row}
+#calViewWeek{flex:1;display:flex;flex-direction:row;overflow:hidden;min-height:0;min-width:0}
+#calViewMonth{flex:1;display:flex;flex-direction:row;overflow:hidden;min-height:0}
+.cal-view-hidden{display:none !important}
 
 /* WEEK */
 #screen-week{flex-direction:column;overflow:hidden;padding:0;background:var(--bg)}
@@ -797,13 +798,23 @@ select.mi{-webkit-appearance:none;cursor:pointer}
   .bnav.active{color:var(--magenta);border-top-color:var(--magenta)}
   .bnav.active span{font-weight:700}
 
-  /* ── WEEK SCREEN ── */
+  /* ── CALENDAR SCREEN (объединённый) ── */
   #screen-week,#screen-week.active{padding:0;overflow-y:auto;overflow-x:hidden;flex-direction:column}
-  .cal-view-switcher{padding:10px 14px 0}
-  .cvs-btn{font-size:11px;padding:9px 0}
-  #calViewWeek{flex-direction:column;overflow-y:visible;overflow-x:hidden}
-  #calViewMonth{overflow-y:visible}
-  .week-left{overflow-y:visible;padding:0;flex:none}
+
+  /* Переключатель Неделя/Месяц */
+  .cal-view-switcher{padding:10px 14px 12px;position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--b1)}
+  .cvs-btn{font-size:11px;padding:10px 0}
+
+  /* Вид недели */
+  #calViewWeek{flex-direction:column;overflow-y:visible;overflow-x:hidden;flex:none;display:flex}
+  .week-left{overflow-y:visible;padding:0;flex:none;min-width:0}
+
+  /* Вид месяца */
+  #calViewMonth:not(.cal-view-hidden){
+    flex-direction:column !important;
+    overflow-y:auto;
+    flex:none
+  }
 
   /* Всплывающее окно дня на мобильном — на весь экран, над нижней навигацией */
   .day-pop{width:100%;max-width:100%;top:52px;bottom:60px;border-left:none}
@@ -845,15 +856,14 @@ select.mi{-webkit-appearance:none;cursor:pointer}
   }
   .ev-time-small{display:inline !important;font-size:9px}
   .cal-ev{padding:5px 8px;gap:5px}
-  #screen-week .stats-block{margin:0 14px 10px}
-  #screen-week .notes-block{margin:0 14px 14px}
+  #calViewWeek .stats-block{margin:0 14px 10px}
+  #calViewWeek .notes-block{margin:0 14px 14px}
   /* Список задач недели — на весь экран под гридом дней */
-  #screen-week .tasklist-block{margin:0;border-radius:0;border-left:none;border-right:none;border-top:1px solid var(--b1)}
+  #calViewWeek .tasklist-block{margin:0;border-radius:0;border-left:none;border-right:none;border-top:1px solid var(--b1)}
   /* Заголовок недели с счётчиком задач — уменьшаем */
   #weekHeading{font-size:12px !important}
 
   /* ── MONTH (внутри объединённого экрана) ── */
-  #calViewMonth,#calViewMonth[style*="flex"]{flex-direction:column;overflow-y:auto;display:flex!important}
   .month-left{flex:none;border-right:none;overflow-y:visible;padding:12px}
   .mday{min-height:48px;padding:3px}
   .mday-n{font-size:10px}
@@ -1501,7 +1511,7 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
   </div>
 
   <!-- ВИД: МЕСЯЦ -->
-  <div id="calViewMonth" style="display:none;flex:1;overflow:hidden;flex-direction:row">
+  <div id="calViewMonth" class="cal-view-hidden">
     <div class="month-left">
       <div class="month-header">
         <div class="screen-heading" id="mTitle"></div>
@@ -2115,10 +2125,10 @@ let calView='week';
 
 function switchCalView(v){
   calView=v;
-  document.getElementById('calViewWeek').style.display=v==='week'?'flex':'none';
+  const wv=document.getElementById('calViewWeek');
   const mv=document.getElementById('calViewMonth');
-  mv.style.display=v==='month'?'flex':'none';
-  mv.style.flexDirection='row';
+  wv.classList.toggle('cal-view-hidden',v!=='week');
+  mv.classList.toggle('cal-view-hidden',v!=='month');
   document.getElementById('cvsWeekBtn').classList.toggle('active',v==='week');
   document.getElementById('cvsMonthBtn').classList.toggle('active',v==='month');
   const tt=document.querySelector('.topbar-title');
@@ -2132,7 +2142,11 @@ function goTo(s,focusId){
   if(typeof closeMonthPanel==='function')closeMonthPanel();
   if(s==='goals')s='focus';
   // Месяц теперь внутри экрана week
-  if(s==='month'){goTo('week');switchCalView('month');return;}
+  if(s==='month'){
+    s='week';
+    // переключимся в вид месяца после того как экран откроется
+    setTimeout(()=>switchCalView('month'),0);
+  }
   document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('.tnav').forEach(x=>x.classList.remove('active'));
   document.getElementById('screen-'+s).classList.add('active');
