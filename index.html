@@ -164,7 +164,32 @@ body{background:var(--bg);color:var(--t1);font-family:'Onest',sans-serif;font-si
 .day-pop-head .month-right-title{margin-bottom:0}
 .day-pop-x{background:var(--s2);border:1px solid var(--b2);border-radius:8px;width:30px;height:30px;font-size:20px;line-height:1;color:var(--t2);cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s;padding:0}
 .day-pop-x:hover{border-color:var(--coral);color:var(--coral)}
-#wrList,#mrList{padding:0 18px 20px;overflow-y:auto;flex:1}
+#wrList,#mrList{padding:0;overflow-y:auto;flex:1}
+/* ── Day time-grid (Google Calendar style) ── */
+.day-tgrid{position:relative;padding:0 14px 20px}
+.day-tg-actions{display:flex;align-items:center;justify-content:space-between;padding:8px 14px 6px;flex-shrink:0;border-bottom:1px solid var(--b1)}
+.day-tg-addBtn{font-size:11px;color:var(--blue);background:none;border:none;cursor:pointer;font-family:'Onest',sans-serif;padding:4px 8px;border-radius:6px;transition:background .15s}
+.day-tg-addBtn:hover{background:var(--blue3)}
+.day-tg-row{display:flex;gap:0;min-height:48px;position:relative}
+.day-tg-row:not(:last-child){border-bottom:1px solid var(--b1)}
+.day-tg-hour{width:42px;flex-shrink:0;font-size:9px;color:var(--t3);padding:4px 6px 0 0;text-align:right;font-family:'Onest',sans-serif;position:relative;top:-7px}
+.day-tg-col{flex:1;position:relative;min-height:48px}
+/* Event block */
+.day-tg-ev{position:absolute;left:2px;right:2px;border-radius:6px;padding:4px 7px;font-size:10px;line-height:1.3;cursor:pointer;overflow:hidden;transition:opacity .15s;z-index:2;border-left:3px solid rgba(0,0,0,.2)}
+.day-tg-ev:hover{opacity:.85}
+.day-tg-ev.ev-done{opacity:.45}
+.day-tg-ev.ev-done .day-tg-ev-title{text-decoration:line-through}
+.day-tg-ev-title{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.day-tg-ev-time{font-size:8.5px;opacity:.75;margin-top:1px}
+.day-tg-ev-actions{display:flex;gap:4px;margin-top:3px}
+.day-tg-ev-btn{background:rgba(255,255,255,.18);border:none;border-radius:4px;font-size:9px;color:inherit;cursor:pointer;padding:1px 5px;font-family:'Onest',sans-serif;transition:opacity .15s}
+.day-tg-ev-btn:hover{opacity:.7}
+/* Pinned tasks (no time range or < 30min): compact list below grid */
+.day-tg-pinned{padding:10px 14px 4px;border-top:1px solid var(--b1)}
+.day-tg-pinned-title{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+/* current time line */
+.day-tg-now{position:absolute;left:44px;right:4px;height:2px;background:var(--coral);z-index:5;pointer-events:none}
+.day-tg-now::before{content:'';position:absolute;left:-4px;top:-4px;width:10px;height:10px;border-radius:50%;background:var(--coral)}
 .day-pop-backdrop{display:none;position:fixed;inset:0;background:rgba(26,26,46,.35);z-index:55}
 .day-pop-backdrop.show{display:block}
 .day-col-head{cursor:pointer}
@@ -1816,7 +1841,8 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
     <div class="modal-title" id="calModalTitle">Добавить задачу</div>
     <div class="mf"><div class="ml">Название</div><input class="mi" id="cmTxt" type="text" placeholder="Название задачи"></div>
     <div class="mi-row">
-      <div class="mf"><div class="ml">Время</div><input class="mi" id="cmTime" type="time" value="10:00"></div>
+      <div class="mf"><div class="ml">Начало</div><input class="mi" id="cmTime" type="time" value="10:00"></div>
+      <div class="mf"><div class="ml">Конец <span style="font-size:9px;color:var(--t3);font-weight:400">(необяз.)</span></div><input class="mi" id="cmEndTime" type="time" placeholder="—"></div>
       <div class="mf"><div class="ml" id="cmDateLabel">Дата</div><input class="mi" id="cmDate" type="date" placeholder="необязательно"></div>
     </div>
     <div class="mf"><div class="ml">Тип</div>
@@ -2556,6 +2582,78 @@ function dateKeyFromDate(dt){return dt.getFullYear()+'-'+String(dt.getMonth()+1)
 function selectWeekDay(dk){selWeekDay=dk;renderWeek();openWeekPanel();}
 function openWeekPanel(){const p=document.getElementById('weekRight'),b=document.getElementById('weekPopBackdrop');if(p)p.classList.add('open');if(b)b.classList.add('show');}
 function closeWeekPanel(){const p=document.getElementById('weekRight'),b=document.getElementById('weekPopBackdrop');if(p)p.classList.remove('open');if(b)b.classList.remove('show');}
+// ── Helpers for time-grid ────────────────────────────────────────────────────
+function timeToMin(s){if(!s)return null;const[h,m]=(s||'').split(':').map(Number);return isNaN(h)?null:h*60+(m||0);}
+function minToTime(m){return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');}
+function renderDayTimeGrid(dateKey,evs,chkFnOf,editFnOf,delFnOf,canDelOf,addDateKey){
+  // Sort by start time
+  const sorted=[...evs].sort((a,b)=>(timeToMin(a.t)||0)-(timeToMin(b.t)||0));
+  // Decide grid range: min start hour → max end hour, min 7:00–22:00
+  let minH=7,maxH=22;
+  sorted.forEach(e=>{
+    const s=timeToMin(e.t);const en=timeToMin(e.endTime);
+    if(s!==null){minH=Math.min(minH,Math.floor(s/60));}
+    if(en!==null){maxH=Math.max(maxH,Math.ceil(en/60));}
+    else if(s!==null){maxH=Math.max(maxH,Math.ceil((s+60)/60));}
+  });
+  minH=Math.max(0,minH-1);maxH=Math.min(24,maxH+1);
+  const PX_PER_MIN=1.6; // px per minute (48px per 30min = 96px/hr)
+  const HR_H=PX_PER_MIN*60;
+  const totalH=(maxH-minH)*HR_H;
+  // Current time line
+  const now=new Date();const nowMin=now.getHours()*60+now.getMinutes();
+  const todayKey=dateKeyFromDate(now);
+  const showNow=dateKey===todayKey&&nowMin>=minH*60&&nowMin<=maxH*60;
+  const nowTop=((nowMin-minH*60)*PX_PER_MIN).toFixed(1);
+  // Hour grid lines HTML
+  let hoursHtml='';
+  for(let h=minH;h<maxH;h++){
+    const top=((h-minH)*HR_H).toFixed(1);
+    hoursHtml+=`<div style="position:absolute;top:${top}px;left:42px;right:0;height:${HR_H}px;border-top:1px solid var(--b1)"></div>
+    <div style="position:absolute;top:${(parseFloat(top)+HR_H/2).toFixed(1)}px;left:42px;right:0;border-top:1px dashed var(--b1);opacity:.4"></div>
+    <div style="position:absolute;top:${top}px;left:0;width:38px;font-size:9px;color:var(--t3);text-align:right;padding-right:6px;font-family:'Onest',sans-serif;line-height:1;transform:translateY(-6px)">${String(h).padStart(2,'0')}:00</div>`;
+  }
+  // Lay out events to handle overlaps (simple greedy column assignment)
+  const cols=[];
+  const layout=sorted.map(e=>{
+    const s=timeToMin(e.t)||minH*60;
+    const en=timeToMin(e.endTime)||(s+60);
+    const colIdx=cols.findIndex(c=>c<=s);
+    const col=colIdx>=0?colIdx:cols.length;
+    cols[col]=en;
+    return{e,s,en,col};
+  });
+  const numCols=cols.length||1;
+  // Events HTML
+  let evHtml='';
+  layout.forEach(({e,s,en,col})=>{
+    const top=((s-minH*60)*PX_PER_MIN).toFixed(1);
+    const height=Math.max(((en-s)*PX_PER_MIN),28).toFixed(1);
+    const color=getETColor(e.cl);
+    const bg=color+'22';const border=color;const textC=color;
+    const w=`calc((100% - 44px) / ${numCols})`;
+    const left=`calc(44px + ${col} * (100% - 44px) / ${numCols})`;
+    const chkFn=chkFnOf(e);const editFn=editFnOf(e);const delFn=delFnOf(e);const canDel=canDelOf(e);
+    const timeLabel=e.endTime?`${e.t}–${e.endTime}`:e.t;
+    const shortHeight=parseFloat(height)<38;
+    evHtml+=`<div class="day-tg-ev${e.done?' ev-done':''}" style="top:${top}px;height:${height}px;left:${left};width:${w};background:${bg};color:${textC};border-left-color:${border}" onclick="${editFn}">
+      <div class="day-tg-ev-title">${e.tx}</div>
+      ${!shortHeight?`<div class="day-tg-ev-time">${timeLabel}</div>`:''}
+      ${!shortHeight?`<div class="day-tg-ev-actions" onclick="event.stopPropagation()">
+        <button class="day-tg-ev-btn" onclick="${chkFn}">${e.done?'↩ Снять':'✓ Готово'}</button>
+        ${canDel?`<button class="day-tg-ev-btn" style="color:var(--coral)" onclick="${delFn}">✕</button>`:''}
+      </div>`:''}
+    </div>`;
+  });
+  return`<div style="padding:8px 14px 6px">${dayStatusBar(addDateKey)}</div>
+<div class="day-tg-actions"><button class="day-tg-addBtn" onclick="openCalAdd(null,'${addDateKey}')">＋ Добавить задачу</button></div>
+<div class="day-tgrid" style="height:${totalH}px;min-height:${totalH}px">
+  ${hoursHtml}
+  ${showNow?`<div class="day-tg-now" style="top:${nowTop}px"></div>`:''}
+  ${evs.length?evHtml:`<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:11px;color:var(--t3)">Нет задач</div>`}
+</div>`;
+}
+
 function renderWeekRight(){
   const t=document.getElementById('wrTitle'),l=document.getElementById('wrList');
   if(!t||!l)return;
@@ -2563,24 +2661,12 @@ function renderWeekRight(){
   const [yy,mm,dd]=selWeekDay.split('-').map(Number);
   const de=getDayEvs(yy,mm-1,dd,true).filter(e=>!e._ghost);
   const doneCnt=de.filter(e=>e.done).length;
-  const st=dayStatuses[selWeekDay];
   t.innerHTML=`${dd} ${MONTHS[mm-1]} · ${doneCnt}/${de.length} выполнено`;
-  const cmap=new Proxy({},{get(_,k){return getETColor(k);}});
-  const evHtml=de.length?de.map(e=>{
-    const isWeek=e.day!==undefined;const isCT=e._ctask;
-    const chkFn=isWeek?`toggleCalEvDone(${e.id})`:isCT?`toggleClientTaskFromCal(${e._cid},${e.id})`:`toggleMEvDoneWeek('${selWeekDay}',${e.id})`;
-    const editFn=isWeek?`openCalEdit(${e.id})`:isCT?`openClientDetail(${e._cid})`:`openCalEditM('${selWeekDay}',${e.id})`;
-    const canDel=!isWeek&&!isCT;
-    return`<div class="mrev ${e.cl}${e.done?' ev-done':''}" style="${mrevColorStyle(e.cl)}">
-      <span class="mrev-chk" onclick="${chkFn}">${e.done?'✓':'○'}</span>
-      <span class="mrev-time">${e.t}</span>
-      <div class="mrev-dot" style="background:${cmap[e.cl]||'#3b82f6'}"></div>
-      <span class="mrev-tx" onclick="${editFn}" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer">${e.tx}</span>
-      ${priorityBadge(e)}
-      <button class="mrev-del" title="Удалить" ${canDel?`onclick="delMEvWeek('${selWeekDay}',${e.id})"`:''} style="${canDel?'':'visibility:hidden'}">✕</button>
-    </div>`;
-  }).join(''):'<div class="no-evs">Нет задач</div>';
-  l.innerHTML=dayStatusBar(selWeekDay)+evHtml+`<div class="add-month-btn" onclick="openCalAdd(null,'${selWeekDay}')">＋ Добавить задачу</div>`;
+  const chkFnOf=e=>e.day!==undefined?`toggleCalEvDone(${e.id})`:e._ctask?`toggleClientTaskFromCal(${e._cid},${e.id})`:`toggleMEvDoneWeek('${selWeekDay}',${e.id})`;
+  const editFnOf=e=>e.day!==undefined?`openCalEdit(${e.id})`:e._ctask?`openClientDetail(${e._cid})`:`openCalEditM('${selWeekDay}',${e.id})`;
+  const canDelOf=e=>e.day===undefined&&!e._ctask;
+  const delFnOf=e=>canDelOf(e)?`delMEvWeek('${selWeekDay}',${e.id})`:'';
+  l.innerHTML=renderDayTimeGrid(selWeekDay,de,chkFnOf,editFnOf,delFnOf,canDelOf,selWeekDay);
 }
 function toggleMEvDoneWeek(key,id){
   const e=(mevs[key]||[]).find(x=>x.id===id);if(!e)return;
@@ -2863,22 +2949,11 @@ function renderMRight(){
   const de=getDayEvs(selDay.y,selDay.m,selDay.d);
   const doneCnt=de.filter(e=>e.done).length;
   t.textContent=`${selDay.d} ${MONTHS[selDay.m]} · ${doneCnt}/${de.length} выполнено`;
-  const cmap=new Proxy({},{get(_,k){return getETColor(k);}});
-  const evHtml=de.length?de.map(e=>{
-    const isWeek=e.day!==undefined;const isCT=e._ctask;
-    const chkFn=isWeek?`toggleCalEvDone(${e.id})`:isCT?`toggleClientTaskFromCal(${e._cid},${e.id})`:`toggleCalEvDoneM('${selDay.key}',${e.id})`;
-    const editFn=isWeek?`openCalEdit(${e.id})`:isCT?`openClientDetail(${e._cid})`:`openCalEditM('${selDay.key}',${e.id})`;
-    const canDel=!isWeek&&!isCT;
-    return`<div class="mrev ${e.cl}${e.done?' ev-done':''}" style="${mrevColorStyle(e.cl)}">
-      <span class="mrev-chk" onclick="${chkFn}">${e.done?'✓':'○'}</span>
-      <span class="mrev-time">${e.t}</span>
-      <div class="mrev-dot" style="background:${cmap[e.cl]||'#3b82f6'}"></div>
-      <span class="mrev-tx" onclick="${editFn}" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer">${e.tx}</span>
-      ${priorityBadge(e)}
-      <button class="mrev-del" title="Удалить" ${canDel?`onclick="delMEv('${selDay.key}',${e.id})"`:''} style="${canDel?'':'visibility:hidden'}">✕</button>
-    </div>`;
-  }).join(''):'<div class="no-evs">Нет задач</div>';
-  l.innerHTML=dayStatusBar(selDay.key)+evHtml+`<div class="add-month-btn" onclick="openCalAdd(null,'${selDay.key}')">＋ Добавить задачу</div>`;
+  const chkFnOf=e=>e.day!==undefined?`toggleCalEvDone(${e.id})`:e._ctask?`toggleClientTaskFromCal(${e._cid},${e.id})`:`toggleCalEvDoneM('${selDay.key}',${e.id})`;
+  const editFnOf=e=>e.day!==undefined?`openCalEdit(${e.id})`:e._ctask?`openClientDetail(${e._cid})`:`openCalEditM('${selDay.key}',${e.id})`;
+  const canDelOf=e=>e.day===undefined&&!e._ctask;
+  const delFnOf=e=>canDelOf(e)?`delMEv('${selDay.key}',${e.id})`:'';
+  l.innerHTML=renderDayTimeGrid(selDay.key,de,chkFnOf,editFnOf,delFnOf,canDelOf,selDay.key);
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -2888,6 +2963,7 @@ function openCalAdd(day,dateKey){
   calEditId=null;calEditDateKey=null;calEditMEvId=null;
   document.getElementById('calModalTitle').textContent='Добавить задачу';
   document.getElementById('cmTxt').value='';document.getElementById('cmTime').value='10:00';
+  document.getElementById('cmEndTime').value='';
   const isNoDate=dateKey==='no-date';
   document.getElementById('cmDate').value=isNoDate?'':(dateKey||dateKeyFromDate(new Date()));
   document.getElementById('cmDateLabel').textContent=isNoDate?'Дата (необяз.)':'Дата';
@@ -2903,6 +2979,7 @@ function openCalEdit(id){
   calEditId=id;calEditDateKey=null;calEditMEvId=null;
   document.getElementById('calModalTitle').textContent='Редактировать задачу';
   document.getElementById('cmTxt').value=e.tx;document.getElementById('cmTime').value=e.t;
+  document.getElementById('cmEndTime').value=e.endTime||'';
   const evDate=new Date(curWeek);evDate.setDate(evDate.getDate()+e.day);
   document.getElementById('cmDate').value=dateKeyFromDate(evDate);
   populateCmType(e.cl);
@@ -2917,6 +2994,7 @@ function openCalEditM(dk,id){
   calEditId=null;calEditDateKey=dk;calEditMEvId=id;
   document.getElementById('calModalTitle').textContent='Редактировать задачу';
   document.getElementById('cmTxt').value=e.tx;document.getElementById('cmTime').value=e.t;
+  document.getElementById('cmEndTime').value=e.endTime||'';
   const isNoDate=dk==='no-date';
   document.getElementById('cmDate').value=isNoDate?'':dk;
   document.getElementById('cmDateLabel').textContent=isNoDate?'Дата (необяз.)':'Дата';
@@ -2932,6 +3010,7 @@ function delCalEv(){calEvs=calEvs.filter(e=>e.id!==calEditId);saveCalLS();closeC
 function saveCalEv(){
   const tx=document.getElementById('cmTxt').value.trim();if(!tx)return;
   const t=document.getElementById('cmTime').value||'10:00';
+  const endTime=document.getElementById('cmEndTime').value||undefined;
   const cl=document.getElementById('cmType').value;
   const priority=document.getElementById('cmPriority').value||undefined;
   const deadline=document.getElementById('cmDeadline').value||undefined;
@@ -2941,11 +3020,11 @@ function saveCalEv(){
     // Редактируем calEvs событие
     const e=calEvs.find(x=>x.id===calEditId);
     if(e){
-      e.tx=tx;e.t=t;e.cl=cl;e.priority=priority;e.deadline=deadline;
+      e.tx=tx;e.t=t;e.endTime=endTime;e.cl=cl;e.priority=priority;e.deadline=deadline;
       const evD=new Date(selectedDate+'T00:00:00');
       const newDi=Math.round((evD-curWeek)/86400000);
       if(newDi>=0&&newDi<7){e.day=newDi;}
-      else{calEvs=calEvs.filter(x=>x.id!==calEditId);if(!mevs[selectedDate])mevs[selectedDate]=[];mevs[selectedDate].push({id:nid++,t,tx,cl,priority,deadline,done:e.done||false});}
+      else{calEvs=calEvs.filter(x=>x.id!==calEditId);if(!mevs[selectedDate])mevs[selectedDate]=[];mevs[selectedDate].push({id:nid++,t,endTime,tx,cl,priority,deadline,done:e.done||false});}
     }
   }else if(calEditDateKey&&calEditMEvId!==null){
     // Редактируем mevs событие — может смениться дата
@@ -2954,11 +3033,11 @@ function saveCalEv(){
     const done=oldEv?!!oldEv.done:false;
     mevs[calEditDateKey]=oldArr.filter(x=>x.id!==calEditMEvId);
     if(!mevs[selectedDate])mevs[selectedDate]=[];
-    mevs[selectedDate].push({id:nid++,t,tx,cl,priority,deadline,done});
+    mevs[selectedDate].push({id:nid++,t,endTime,tx,cl,priority,deadline,done});
   }else{
     // Новое событие
     if(!mevs[selectedDate])mevs[selectedDate]=[];
-    mevs[selectedDate].push({id:nid++,t,tx,cl,priority,deadline});
+    mevs[selectedDate].push({id:nid++,t,endTime,tx,cl,priority,deadline});
   }
   saveCalLS();
   closeCalModal();renderWeek();if(calView==='month'){renderMonth();renderMonthStats();renderMonthTaskList();}
