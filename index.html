@@ -203,6 +203,10 @@ body{background:var(--bg);color:var(--t1);font-family:'Onest',sans-serif;font-si
 .tl-day-group{border-bottom:1px solid var(--b1)}
 .tl-day-group:last-child{border-bottom:none}
 .tl-day-hdr{display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--s2);border-bottom:1px solid var(--b1)}
+.tl-nodate-group{border-bottom:2px solid var(--magenta);background:rgba(196,48,106,.03)}
+.tl-nodate-hdr{display:flex;align-items:center;gap:8px;padding:8px 14px;background:rgba(196,48,106,.07);border-bottom:1px solid rgba(196,48,106,.2)}
+.tl-nodate-label{font-size:10px;font-weight:700;color:var(--magenta);font-family:'Unbounded',sans-serif;flex:1;letter-spacing:.02em}
+.tl-nodate-hint{font-size:9px;color:var(--t3);font-family:'Onest',sans-serif}
 .tl-day-name{font-size:10px;font-weight:700;color:var(--t1);letter-spacing:.04em;flex:1}
 .tl-day-count{font-size:9px;color:var(--t3);background:var(--s3);border-radius:10px;padding:1px 7px}
 .tl-day-hdr.tl-today .tl-day-name{color:var(--blue)}
@@ -1519,7 +1523,8 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
               <button class="tl-filter-chip" onclick="setTlFilter('active',this)">Активные</button>
               <button class="tl-filter-chip" onclick="setTlFilter('done',this)">Выполнены</button>
             </div>
-            <button class="add-btn" style="font-size:10px;padding:5px 12px" onclick="openCalAdd(null,null)">+ Добавить задачу</button>
+            <button class="add-btn" style="font-size:10px;padding:5px 12px;background:var(--s2);border-color:var(--b2);color:var(--magenta)" onclick="openCalAdd(null,'no-date')">+ Без даты</button>
+            <button class="add-btn" style="font-size:10px;padding:5px 12px" onclick="openCalAdd(null,null)">+ С датой</button>
           </div>
         </div>
         <div id="weekTaskList"></div>
@@ -1569,7 +1574,8 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
               <button class="tl-filter-chip mtl" onclick="setMtlFilter('active',this)">Активные</button>
               <button class="tl-filter-chip mtl" onclick="setMtlFilter('done',this)">Выполнены</button>
             </div>
-            <button class="add-btn" style="font-size:10px;padding:5px 12px" onclick="openCalAdd(null,null)">+ Добавить задачу</button>
+            <button class="add-btn" style="font-size:10px;padding:5px 12px;background:var(--s2);border-color:var(--b2);color:var(--magenta)" onclick="openCalAdd(null,'no-date')">+ Без даты</button>
+            <button class="add-btn" style="font-size:10px;padding:5px 12px" onclick="openCalAdd(null,null)">+ С датой</button>
           </div>
         </div>
         <div id="monthTaskList"></div>
@@ -1811,7 +1817,7 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
     <div class="mf"><div class="ml">Название</div><input class="mi" id="cmTxt" type="text" placeholder="Название задачи"></div>
     <div class="mi-row">
       <div class="mf"><div class="ml">Время</div><input class="mi" id="cmTime" type="time" value="10:00"></div>
-      <div class="mf"><div class="ml">Дата</div><input class="mi" id="cmDate" type="date"></div>
+      <div class="mf"><div class="ml" id="cmDateLabel">Дата</div><input class="mi" id="cmDate" type="date" placeholder="необязательно"></div>
     </div>
     <div class="mf"><div class="ml">Тип</div>
       <div class="cmtype-row">
@@ -2634,10 +2640,42 @@ function tlDrop(e,tgtKey){
   tlDragId=null;tlDragSrcKey=null;
 }
 
+function renderNodateGroup(dragStartFn,dragEndFn,dropFn){
+  const evs=mevs['no-date']||[];
+  if(!evs.length)return`<div class="tl-nodate-group" ondragover="tlDragOver(event)" ondragleave="tlDragLeave(event)" ondrop="${dropFn}(event,'no-date')">
+    <div class="tl-nodate-hdr"><span class="tl-nodate-label">📋 Без даты</span><span class="tl-nodate-hint">Перетащите задачу на нужный день</span><button class="tl-add-btn" onclick="openCalAdd(null,'no-date')">+ добавить</button></div>
+    <div class="tl-empty">нет задач без даты</div></div>`;
+  const rows=evs.map(e=>{
+    const typeLabel=TYPE_LABELS[e.cl]||'Другое';
+    const dlTxt=e.deadline?e.deadline.slice(5).replace('-','.'):'';
+    return`<div class="tl-row${e.done?' tl-done':''}" draggable="true" ondragstart="${dragStartFn}(event,${e.id},'no-date')" ondragend="${dragEndFn}(event)">
+      <span class="tl-chk" onclick="toggleNodateDone(${e.id})" title="${e.done?'Снять':'Выполнено'}">${e.done?'✓':''}</span>
+      <span class="tl-time">${e.t}</span>
+      <span class="tl-type ${e.cl}" style="font-size:8.5px;font-weight:600;padding:2px 5px;border-radius:4px;${evColorStyle(e.cl)}">${typeLabel}</span>
+      <span class="tl-name" onclick="openCalEditM('no-date',${e.id})">${e.tx}</span>
+      <span class="tl-prio">${e.priority?priorityBadge(e):''}</span>
+      ${dlTxt?`<span class="tl-dl">до ${dlTxt}</span>`:'<span class="tl-dl"></span>'}
+      <button class="tl-del" title="Удалить" onclick="delNodateEv(${e.id})">✕</button>
+    </div>`;
+  }).join('');
+  return`<div class="tl-nodate-group" ondragover="tlDragOver(event)" ondragleave="tlDragLeave(event)" ondrop="${dropFn}(event,'no-date')">
+    <div class="tl-nodate-hdr"><span class="tl-nodate-label">📋 Без даты</span><span class="tl-nodate-hint">Перетащите задачу на день</span><button class="tl-add-btn" onclick="openCalAdd(null,'no-date')">+ добавить</button></div>
+    ${rows}</div>`;
+}
+function toggleNodateDone(id){
+  const e=(mevs['no-date']||[]).find(x=>x.id===id);if(!e)return;
+  e.done=!e.done;saveCalLS();renderWeekTaskList();renderMonthTaskList();
+}
+function delNodateEv(id){
+  if(!mevs['no-date'])return;
+  mevs['no-date']=mevs['no-date'].filter(x=>x.id!==id);
+  saveCalLS();renderWeekTaskList();renderMonthTaskList();
+}
+
 function renderWeekTaskList(){
   const el=document.getElementById('weekTaskList');if(!el)return;
   const todayKey=dateKeyFromDate(new Date());
-  let html='';
+  let html=renderNodateGroup('tlDragStart','tlDragEnd','tlDrop');
   DAYS.forEach((dayName,di)=>{
     const dayDate=new Date(curWeek);dayDate.setDate(dayDate.getDate()+di);
     const dk=weekDayKey(curWeek,di);
@@ -2723,9 +2761,10 @@ function renderMonthTaskList(){
   // Compute total/done for heading
   let mTotal=0,mDone=0;
   for(let d=1;d<=dim;d++){const evs=getDayEvs(y,m,d,true).filter(e=>!e._ghost);mTotal+=evs.length;mDone+=evs.filter(e=>e.done).length;}
+  const ndEvs=mevs['no-date']||[];mTotal+=ndEvs.length;mDone+=ndEvs.filter(e=>e.done).length;
   const titleEl=document.getElementById('monthTaskListTitle');
   if(titleEl)titleEl.innerHTML='Список задач месяца'+(mTotal?` <span style="font-size:9px;font-weight:400;opacity:.6;font-family:'Onest',sans-serif"> · ${mDone}/${mTotal}</span>`:'');
-  let html='';
+  let html=renderNodateGroup('mtlDragStart','mtlDragEnd','mtlDrop');
   for(let d=1;d<=dim;d++){
     const dk=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const allEvs=getDayEvs(y,m,d,true).filter(e=>!e._ghost);
@@ -2849,7 +2888,9 @@ function openCalAdd(day,dateKey){
   calEditId=null;calEditDateKey=null;calEditMEvId=null;
   document.getElementById('calModalTitle').textContent='Добавить задачу';
   document.getElementById('cmTxt').value='';document.getElementById('cmTime').value='10:00';
-  document.getElementById('cmDate').value=dateKey||dateKeyFromDate(new Date());
+  const isNoDate=dateKey==='no-date';
+  document.getElementById('cmDate').value=isNoDate?'':(dateKey||dateKeyFromDate(new Date()));
+  document.getElementById('cmDateLabel').textContent=isNoDate?'Дата (необяз.)':'Дата';
   populateCmType('ev-custom');
   document.getElementById('cmPriority').value='';
   document.getElementById('cmDeadline').value='';
@@ -2876,7 +2917,9 @@ function openCalEditM(dk,id){
   calEditId=null;calEditDateKey=dk;calEditMEvId=id;
   document.getElementById('calModalTitle').textContent='Редактировать задачу';
   document.getElementById('cmTxt').value=e.tx;document.getElementById('cmTime').value=e.t;
-  document.getElementById('cmDate').value=dk;
+  const isNoDate=dk==='no-date';
+  document.getElementById('cmDate').value=isNoDate?'':dk;
+  document.getElementById('cmDateLabel').textContent=isNoDate?'Дата (необяз.)':'Дата';
   populateCmType(e.cl||'ev-custom');
   document.getElementById('cmPriority').value=e.priority||'';
   document.getElementById('cmDeadline').value=e.deadline||'';
@@ -2892,7 +2935,8 @@ function saveCalEv(){
   const cl=document.getElementById('cmType').value;
   const priority=document.getElementById('cmPriority').value||undefined;
   const deadline=document.getElementById('cmDeadline').value||undefined;
-  const selectedDate=document.getElementById('cmDate').value||dateKeyFromDate(new Date());
+  const rawDate=document.getElementById('cmDate').value;
+  const selectedDate=rawDate||'no-date';
   if(calEditId){
     // Редактируем calEvs событие
     const e=calEvs.find(x=>x.id===calEditId);
