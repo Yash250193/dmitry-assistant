@@ -1622,7 +1622,7 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
       </div>
       <div class="tasklist-block">
         <div class="tasklist-head">
-          <div class="tasklist-title">Список задач месяца</div>
+          <div class="tasklist-title">Список задач недели</div>
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end">
             <div class="tl-filters">
               <button class="tl-filter-chip active" onclick="setTlFilter('all',this)">Все</button>
@@ -2959,9 +2959,6 @@ function delNodateEv(id){
 }
 
 function renderWeekTaskList(){
-  renderMonthTaskList('weekTaskList');
-}
-function _renderWeekTaskListOld(){
   const el=document.getElementById('weekTaskList');if(!el)return;
   const todayKey=dateKeyFromDate(new Date());
   let html=renderNodateGroup('tlDragStart','tlDragEnd','tlDrop');
