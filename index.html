@@ -2617,6 +2617,8 @@ function toggleChat(){
   const btn=document.getElementById('chatToggleBtn');
   const open=panel.classList.toggle('show');
   btn.classList.toggle('active',open);
+  const fab=document.getElementById('voiceFab');
+  if(fab)fab.style.display=open?'none':'';
   if(open)document.getElementById('inp').focus();
 }
 
@@ -3977,9 +3979,11 @@ async function send(){
   if(!key){document.getElementById('typing')?.remove();addMsg('bot','Введи API ключ через ⚙ в шапке чата.');btn.disabled=false;return;}
   try{
     const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:1500,messages:msgs})});
-    const data=await r.json();const reply=data.content?.[0]?.text||'Ошибка. Попробуй ещё.';
+    const data=await r.json();
+    if(!r.ok){document.getElementById('typing')?.remove();addMsg('bot','Ошибка API ('+(r.status)+'): '+(data.error?.message||'Проверь API ключ.'));btn.disabled=false;return;}
+    const reply=data.content?.[0]?.text||'Пустой ответ.';
     msgs.push({role:'assistant',content:reply});saveChatHistory();document.getElementById('typing')?.remove();addMsg('bot',reply);
-  }catch(e){document.getElementById('typing')?.remove();addMsg('bot','Ошибка соединения.');}
+  }catch(e){document.getElementById('typing')?.remove();addMsg('bot','Ошибка соединения: '+e.message);}
   btn.disabled=false;
 }
 
