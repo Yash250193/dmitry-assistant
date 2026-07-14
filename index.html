@@ -670,7 +670,7 @@ select.mi{-webkit-appearance:none;cursor:pointer}
 .voice-fab.listening{background:#C4306A;animation:voicePulse 1s infinite}
 @keyframes voicePulse{0%,100%{box-shadow:0 4px 16px rgba(196,48,106,.4)}50%{box-shadow:0 4px 24px rgba(196,48,106,.7),0 0 0 8px rgba(196,48,106,.15)}}
 .voice-toast{position:fixed;bottom:136px;left:16px;background:var(--s2);border:1px solid var(--b2);border-radius:12px;padding:8px 14px;font-size:11px;color:var(--t2);display:none;z-index:201;max-width:220px;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,.15)}
-@media(max-width:768px){.voice-fab{display:flex}}
+/* @media(max-width:768px){.voice-fab{display:flex}} */
 
 .habits-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
 .habits-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
@@ -1622,7 +1622,7 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
       </div>
       <div class="tasklist-block">
         <div class="tasklist-head">
-          <div class="tasklist-title">Список задач недели</div>
+          <div class="tasklist-title">Список задач месяца</div>
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end">
             <div class="tl-filters">
               <button class="tl-filter-chip active" onclick="setTlFilter('all',this)">Все</button>
@@ -2617,8 +2617,6 @@ function toggleChat(){
   const btn=document.getElementById('chatToggleBtn');
   const open=panel.classList.toggle('show');
   btn.classList.toggle('active',open);
-  const fab=document.getElementById('voiceFab');
-  if(fab)fab.style.display=open?'none':'';
   if(open)document.getElementById('inp').focus();
 }
 
@@ -2961,6 +2959,9 @@ function delNodateEv(id){
 }
 
 function renderWeekTaskList(){
+  renderMonthTaskList('weekTaskList');
+}
+function _renderWeekTaskListOld(){
   const el=document.getElementById('weekTaskList');if(!el)return;
   const todayKey=dateKeyFromDate(new Date());
   let html=renderNodateGroup('tlDragStart','tlDragEnd','tlDrop');
@@ -3042,8 +3043,8 @@ function mtlDrop(e,tgtKey){
   mtlDragId=null;mtlDragSrcKey=null;
 }
 
-function renderMonthTaskList(){
-  const el=document.getElementById('monthTaskList');if(!el)return;
+function renderMonthTaskList(targetId){
+  const el=document.getElementById(targetId||'monthTaskList');if(!el)return;
   const y=curMonth.getFullYear(),m=curMonth.getMonth();
   const dim=new Date(y,m+1,0).getDate();
   const todayKey=dateKeyFromDate(new Date());
@@ -5243,9 +5244,8 @@ async function checkAutoReports(){
 function getISOWeek(d){const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));t.setUTCDate(t.getUTCDate()+4-(t.getUTCDay()||7));const y=t.getUTCFullYear();const w=Math.ceil((((t-new Date(Date.UTC(y,0,1)))/86400000)+1)/7);return w;}
 </script>
 
-<!-- VOICE INPUT FAB (mobile only) -->
-<button class="voice-fab" id="voiceFab" onclick="toggleVoiceInput()" title="Голосовой ввод задачи">🎤</button>
-<div class="voice-toast" id="voiceToast">Слушаю...</div>
+<!-- Voice FAB hidden for now -->
+<div class="voice-toast" id="voiceToast" style="display:none"></div>
 
 <!-- BOTTOM NAV (mobile only) -->
 <nav class="bottom-nav" id="bottomNav">
