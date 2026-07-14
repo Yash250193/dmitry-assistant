@@ -1868,10 +1868,16 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
 <div class="chat-panel" id="chatPanel">
   <div class="chat-panel-hdr">
     <div class="chat-panel-title">ИИ АССИСТЕНТ</div>
-    <div style="display:flex;align-items:center;gap:8px">
+    <div style="display:flex;align-items:center;gap:6px">
+      <button onclick="toggleAIKeyBar()" style="background:none;border:none;color:var(--t3);font-size:13px;cursor:pointer;padding:3px 6px;border-radius:5px;border:1px solid var(--b2)" title="API ключ Claude">⚙</button>
       <button onclick="clearChatHistory()" style="background:none;border:none;color:var(--t3);font-size:11px;cursor:pointer;font-family:'Onest',sans-serif;padding:3px 7px;border-radius:5px;border:1px solid var(--b2)" title="Очистить историю">🗑 Очистить</button>
       <button class="chat-panel-close" onclick="toggleChat()">×</button>
     </div>
+  </div>
+  <div id="aiKeyBar" style="display:none;padding:10px 14px;background:var(--s2);border-bottom:1px solid var(--b1);gap:8px;align-items:center;flex-wrap:wrap">
+    <div style="font-size:10px;color:var(--t3);width:100%;margin-bottom:4px">API ключ Anthropic Claude (хранится локально):</div>
+    <input id="aiKeyInput" type="password" placeholder="sk-ant-api03-..." style="flex:1;min-width:180px;padding:6px 10px;border-radius:6px;border:1px solid var(--b2);background:var(--s1);color:var(--t1);font-size:12px;font-family:'Onest',sans-serif">
+    <button onclick="saveAIKey()" style="padding:6px 14px;border-radius:6px;border:none;background:var(--magenta);color:#fff;font-size:11px;font-family:'Onest',sans-serif;cursor:pointer">Сохранить</button>
   </div>
   <div class="chat-area" id="chatArea">
     <div class="msg bot">
@@ -1904,6 +1910,18 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
     </div>
   </div>
   <input type="file" id="fileInput" accept=".txt,.md,.csv,.json,.js,.py,.html,.css" onchange="handleFile(event)">
+</div>
+
+<!-- AI REPORT MODAL -->
+<div class="overlay" id="aiReportOverlay" style="z-index:500">
+  <div class="modal" style="max-height:80vh;overflow-y:auto;max-width:540px">
+    <div class="modal-title" id="aiReportTitle">Отчёт</div>
+    <div id="aiReportBody" style="font-size:13px;line-height:1.75;color:var(--t1);white-space:pre-wrap;padding-top:4px"></div>
+    <div class="modal-btns" style="margin-top:20px">
+      <button class="mbtn primary" onclick="document.getElementById('aiReportOverlay').classList.remove('show')">Закрыть</button>
+      <button class="mbtn secondary" onclick="openReportInChat()">Обсудить в чате</button>
+    </div>
+  </div>
 </div>
 
 <!-- CLIENT DETAIL -->
@@ -3814,16 +3832,57 @@ document.getElementById('clientOverlay').onclick=e=>{if(e.target===e.currentTarg
 // ═══════════════════════════════════════════════════════════════════
 // AI CHAT
 // ═══════════════════════════════════════════════════════════════════
-const CTX=`Ты персональный ассистент Дмитрия. Знай:
-Дмитрий, 33 года. Авитолог → строит бизнес одного человека с ИИ.
-Старт мастер-плана: 18 мая 2026. Точка Б: ноябрь 2026.
-Личные цели: Форд Мондео ~1 млн, подушка 500k, подарки близким, Таиланд март 2027.
-3 ФОКУСА: 1)Авито клиенты→150k CRM n8n 2)ИИ 100дней+расширение 3)Профиль ИИ-контент→100k.
-КЛИЕНТЫ: долгосрочный 30k→80k; отопление 20k→100k CPA; плитка 20k→50k; натяжные БРИФ НЕ ОТПРАВЛЕН СРОЧНО; клиент#5 до июля.
-РЕЖИМ: 05:40 подъём, 07:20 насмотренность, 10-16 Авито, 16-17 ИИ, 19-21 блог/участок, 21 отдых.
-ПРАВИЛА: идеи→потом, 100 дней ИИ, 1 профиль до 100k, сверка вс.
-Отвечай кратко конкретно по-русски. Как умный друг. Никакой воды.`;
-let msgs=[{role:'user',content:CTX+'\n\nПодтверди контекст одной фразой.'}];
+function getAIKey(){return localStorage.getItem('aiApiKey')||'';}
+function saveAIKey(){
+  const v=document.getElementById('aiKeyInput').value.trim();
+  if(!v)return;
+  localStorage.setItem('aiApiKey',v);
+  document.getElementById('aiKeyBar').style.display='none';
+  addMsg('bot','API ключ сохранён ✓ Теперь ИИ работает полноценно.');
+  inited=false;
+}
+function toggleAIKeyBar(){
+  const bar=document.getElementById('aiKeyBar');
+  const show=bar.style.display==='none'||!bar.style.display;
+  bar.style.display=show?'flex':'none';
+  if(show){const k=getAIKey();if(k)document.getElementById('aiKeyInput').value=k;}
+}
+
+function buildAIContext(){
+  const today=new Date();
+  const todayKey=dateKeyFromDate(today);
+  const yk=new Date(today);yk.setDate(yk.getDate()-1);
+  const ykKey=dateKeyFromDate(yk);
+  const todayTasks=(mevs[todayKey]||[]).map(e=>`- ${e.t} ${e.tx}${e.done?' ✓':''}`).join('\n')||'нет';
+  const yTasks=(mevs[ykKey]||[]).map(e=>`- ${e.tx}${e.done?' ✓':' ✗'}`).join('\n')||'нет';
+  const clStr=clients.map(cl=>`${cl.name}(${cl.status||'активный'})`).join(', ')||'нет';
+  return`Ты персональный ассистент Дмитрия, 33 года. Авитолог, строит бизнес с ИИ.
+Мастер-план: старт 18 мая 2026, точка Б ноябрь 2026.
+3 ФОКУСА: 1)Авито клиенты→150k CRM 2)ИИ 100дней→расширение 3)Профиль→100k подписчиков.
+Личные цели: Форд Мондео ~1 млн, подушка 500k, Таиланд март 2027.
+Режим: 05:40 подъём, 10-16 Авито, 16-17 ИИ, 19-21 блог.
+Клиенты: ${clStr}
+Сегодня: ${today.toLocaleDateString('ru-RU')}.
+Задачи сегодня:\n${todayTasks}
+Задачи вчера:\n${yTasks}
+Отвечай кратко, конкретно, по-русски. Как умный партнёр. Без воды.`;
+}
+
+async function callClaude(messages,systemPrompt,maxTokens=1000){
+  const key=getAIKey();
+  if(!key)return null;
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:maxTokens,system:systemPrompt,messages})
+    });
+    const d=await r.json();
+    return d.content?.[0]?.text||null;
+  }catch(e){return null;}
+}
+
+let msgs=[{role:'user',content:buildAIContext()+'\n\nПодтверди контекст одной фразой.'}];
 let inited=false;
 let chatLog=[];
 const CHAT_LS='chatHistory';
@@ -3862,7 +3921,17 @@ function clearChatHistory(){
   document.getElementById('suggs').style.display='';
 }
 
-async function initAI(){if(inited)return;inited=true;try{const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:300,messages:msgs})});const d=await r.json();msgs.push({role:'assistant',content:d.content?.[0]?.text||''});saveChatHistory();}catch(e){}}
+async function initAI(){
+  if(inited)return;inited=true;
+  // Rebuild context with current app data
+  msgs[0]={role:'user',content:buildAIContext()+'\n\nПодтверди контекст одной фразой.'};
+  const key=getAIKey();
+  if(!key){addMsg('bot','Привет! Введи API ключ Claude через ⚙ чтобы я работал.');return;}
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:300,messages:msgs})});
+    const d=await r.json();msgs.push({role:'assistant',content:d.content?.[0]?.text||''});saveChatHistory();
+  }catch(e){}
+}
 
 let rec=null,isRec=false;
 function toggleVoice(){
@@ -3904,11 +3973,13 @@ async function send(){
   inp.value='';inp.style.height='auto';btn.disabled=true;
   document.getElementById('suggs').style.display='none';rmFile();
   addMsg('user',ut,fi);msgs.push({role:'user',content:ai});addTyping();
+  const key=getAIKey();
+  if(!key){document.getElementById('typing')?.remove();addMsg('bot','Введи API ключ через ⚙ в шапке чата.');btn.disabled=false;return;}
   try{
-    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:msgs})});
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:1500,messages:msgs})});
     const data=await r.json();const reply=data.content?.[0]?.text||'Ошибка. Попробуй ещё.';
     msgs.push({role:'assistant',content:reply});saveChatHistory();document.getElementById('typing')?.remove();addMsg('bot',reply);
-  }catch(e){document.getElementById('typing')?.remove();addMsg('bot','Ошибка соединения. Нужен API ключ.');}
+  }catch(e){document.getElementById('typing')?.remove();addMsg('bot','Ошибка соединения.');}
   btn.disabled=false;
 }
 
@@ -4948,6 +5019,7 @@ loadFinData();
 pomoRender();
 renderWeek();
 renderSidebar();
+setTimeout(()=>checkAutoReports(),1500);
 
 // ═══════════════════════════════════════════════════════════════════
 // VOICE INPUT
@@ -4972,13 +5044,8 @@ function toggleVoiceInput(){
     const text=e.results[0][0].transcript.trim();
     stopVoice();
     toast.style.display='block';toast.textContent='«'+text+'»';
-    setTimeout(()=>{toast.style.display='none';},2500);
-    // Open calendar modal pre-filled with recognized text
-    openCalAdd(null,null);
-    setTimeout(()=>{
-      const inp=document.getElementById('cmTxt');
-      if(inp){inp.value=text;inp.focus();}
-    },50);
+    setTimeout(()=>{toast.style.display='none';},3000);
+    handleVoiceResult(text);
   };
   voiceRecognition.onerror=()=>{stopVoice();toast.style.display='none';};
   voiceRecognition.onend=()=>{if(voiceActive)stopVoice();};
@@ -4990,6 +5057,186 @@ function stopVoice(){
   fab.classList.remove('listening');fab.textContent='🎤';
   if(voiceRecognition){try{voiceRecognition.stop();}catch(e){}voiceRecognition=null;}
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// SMART VOICE → TASK PARSING
+// ═══════════════════════════════════════════════════════════════════
+async function smartParseVoiceToTask(text){
+  const today=new Date();
+  const types=Object.entries(etDefs).map(([id,d])=>`${id}=${d.label||id}`).join(', ');
+  const clientNames=clients.map(c=>c.name).join(', ')||'нет';
+  const sys=`Ты разбираешь голосовую команду добавления задачи.
+Сегодня: ${today.toLocaleDateString('ru-RU')} (${today.toISOString().slice(0,10)}).
+Типы задач: ${types}.
+Клиенты: ${clientNames}.
+Верни ТОЛЬКО JSON без пояснений:
+{
+  "tx": "название задачи",
+  "date": "YYYY-MM-DD или null",
+  "time": "HH:MM",
+  "type": "id типа задачи",
+  "priority": "low|mid|high или null",
+  "clientName": "имя клиента или null",
+  "comment": "комментарий или null"
+}
+Примеры дат: "завтра"→следующий день, "в пятницу"→ближайшую пятницу, "сегодня"→сегодня.`;
+  const result=await callClaude([{role:'user',content:text}],sys,512);
+  if(!result)return{tx:text};
+  try{const j=result.replace(/```json|```/g,'').trim();return JSON.parse(j);}catch(e){return{tx:text};}
+}
+
+async function handleVoiceResult(text){
+  const toast=document.getElementById('voiceToast');
+  toast.textContent='Разбираю команду...';
+  const parsed=await smartParseVoiceToTask(text);
+  toast.style.display='none';
+  // Open calendar modal
+  openCalAdd(null,parsed.date||null);
+  setTimeout(()=>{
+    const inp=document.getElementById('cmTxt');if(inp)inp.value=parsed.tx||text;
+    if(parsed.time)document.getElementById('cmTime').value=parsed.time;
+    if(parsed.date)document.getElementById('cmDate').value=parsed.date;
+    if(parsed.priority)document.getElementById('cmPriority').value=parsed.priority;
+    if(parsed.comment)document.getElementById('cmComment').value=parsed.comment;
+    if(parsed.type){populateCmType(parsed.type,'');}
+    if(parsed.clientName){
+      const cl=clients.find(c=>c.name.toLowerCase().includes(parsed.clientName.toLowerCase()));
+      if(cl){updateCmClientRow(parsed.type||'ev-avito',cl.id);}
+    }
+  },80);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// AUTO REPORTS (ежедневный, еженедельный, ежемесячный)
+// ═══════════════════════════════════════════════════════════════════
+function getReportKey(type){return'aiReport_'+type;}
+function reportAlreadySent(type,dateStr){return localStorage.getItem(getReportKey(type))===dateStr;}
+function markReportSent(type,dateStr){localStorage.setItem(getReportKey(type),dateStr);}
+
+function buildReportContext(){
+  const today=new Date();
+  const yk=new Date(today);yk.setDate(yk.getDate()-1);
+  const ykKey=dateKeyFromDate(yk);
+  const yTasks=(mevs[ykKey]||[]);
+  const done=yTasks.filter(e=>e.done).length;
+  const total=yTasks.length;
+  const taskLines=yTasks.map(e=>`- [${e.done?'✓':'✗'}] ${e.t} ${e.tx}`).join('\n')||'нет задач';
+
+  // Week tasks
+  const weekLines=[];
+  for(let i=6;i>=0;i--){const d=new Date(today);d.setDate(d.getDate()-i);const k=dateKeyFromDate(d);const evs=mevs[k]||[];if(evs.length)weekLines.push(`${d.toLocaleDateString('ru',{weekday:'short',day:'numeric'})}:\n`+evs.map(e=>`  [${e.done?'✓':'✗'}] ${e.tx}`).join('\n'));}
+
+  // Today tasks
+  const todayKey=dateKeyFromDate(today);
+  const todayTasks=(mevs[todayKey]||[]).map(e=>`- ${e.t} ${e.tx}`).join('\n')||'нет';
+
+  // Finance for current month
+  const mk=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
+  const finCtx=getAllFinEntries?getAllFinEntries(mk):[];
+  const finInc=finCtx.filter(e=>e.type==='income').reduce((s,e)=>s+(e.amount||0),0);
+  const finExp=finCtx.filter(e=>e.type==='expense').reduce((s,e)=>s+(e.amount||0),0);
+
+  return{ykKey,done,total,taskLines,weekLines:weekLines.join('\n\n'),todayTasks,finInc,finExp,mk,today};
+}
+
+async function generateDailyReport(){
+  const {done,total,taskLines,todayTasks,today}=buildReportContext();
+  const sys=`Ты помощник Дмитрия. Составь КРАТКИЙ ежедневный отчёт (5-8 предложений макс).
+Структура:
+📊 Итог вчера: выполнено ${done}/${total} задач
+[краткий вывод о продуктивности]
+
+✅ Что сделано:
+${taskLines}
+
+🎯 Рекомендации на сегодня:
+[2-3 конкретных совета исходя из нагруженности и задач]
+
+Сегодняшние задачи:
+${todayTasks}
+
+Будь конкретным и поддерживающим.`;
+  const result=await callClaude([{role:'user',content:`Составь ежедневный отчёт на ${today.toLocaleDateString('ru-RU')}`}],sys,800);
+  if(result)showAIReport('📊 Ежедневный отчёт · '+today.toLocaleDateString('ru-RU'),result);
+}
+
+async function generateWeeklyReport(){
+  const {weekLines,finInc,finExp,today}=buildReportContext();
+  const sys=`Ты помощник Дмитрия. Составь КРАТКИЙ еженедельный итог (8-12 предложений).
+Структура:
+🗓 Итог недели:
+[ключевые достижения, паттерны продуктивности]
+
+Задачи по дням:
+${weekLines}
+
+Финансы месяца: доходы ${finInc.toLocaleString('ru')}₽, расходы ${finExp.toLocaleString('ru')}₽
+
+💡 Рекомендации на следующую неделю:
+[3 конкретных приоритета]`;
+  const result=await callClaude([{role:'user',content:'Составь еженедельную сводку'}],sys,1000);
+  if(result)showAIReport('🗓 Еженедельная сводка · '+today.toLocaleDateString('ru-RU'),result);
+}
+
+async function generateMonthlyReport(){
+  const {weekLines,finInc,finExp,mk,today}=buildReportContext();
+  const clientsSummary=clients.map(cl=>`${cl.name}: ${(cl.tasks||[]).filter(t=>t.done).length}/${(cl.tasks||[]).length} задач выполнено`).join('\n');
+  const sys=`Ты помощник Дмитрия. Составь ежемесячный отчёт.
+Структура:
+📅 Итог ${mk}:
+[ключевые достижения месяца]
+
+💰 Финансы: доходы ${finInc.toLocaleString('ru')}₽, расходы ${finExp.toLocaleString('ru')}₽, прибыль ${(finInc-finExp).toLocaleString('ru')}₽
+
+👥 Клиенты:
+${clientsSummary||'нет данных'}
+
+🚀 Рекомендации на следующий месяц:
+[3-5 стратегических советов]`;
+  const result=await callClaude([{role:'user',content:'Составь ежемесячный отчёт'}],sys,1200);
+  if(result)showAIReport('📅 Ежемесячная сводка · '+mk,result);
+}
+
+function showAIReport(title,body){
+  document.getElementById('aiReportTitle').textContent=title;
+  document.getElementById('aiReportBody').innerHTML=body.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<b>$1</b>');
+  document.getElementById('aiReportOverlay').classList.add('show');
+}
+
+let _lastReportText='';
+function openReportInChat(){
+  document.getElementById('aiReportOverlay').classList.remove('show');
+  toggleChat();
+  setTimeout(()=>{
+    const t=document.getElementById('aiReportTitle').textContent;
+    chip('Обсудим отчёт: '+t+'. Что мне сделать в первую очередь?');
+  },300);
+}
+
+async function checkAutoReports(){
+  if(!getAIKey())return;
+  const today=new Date();
+  const todayStr=dateKeyFromDate(today);
+  // Daily — every day
+  if(!reportAlreadySent('daily',todayStr)){
+    markReportSent('daily',todayStr);
+    setTimeout(generateDailyReport,2000);
+    return;
+  }
+  // Weekly — every Sunday
+  if(today.getDay()===0){
+    const weekStr='W'+getISOWeek(today)+'-'+today.getFullYear();
+    if(!reportAlreadySent('weekly',weekStr)){markReportSent('weekly',weekStr);setTimeout(generateWeeklyReport,3000);return;}
+  }
+  // Monthly — last 2 days of month
+  const nextDay=new Date(today);nextDay.setDate(nextDay.getDate()+1);
+  if(nextDay.getMonth()!==today.getMonth()){
+    const mStr=todayStr.slice(0,7);
+    if(!reportAlreadySent('monthly',mStr)){markReportSent('monthly',mStr);setTimeout(generateMonthlyReport,4000);}
+  }
+}
+
+function getISOWeek(d){const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));t.setUTCDate(t.getUTCDate()+4-(t.getUTCDay()||7));const y=t.getUTCFullYear();const w=Math.ceil((((t-new Date(Date.UTC(y,0,1)))/86400000)+1)/7);return w;}
 </script>
 
 <!-- VOICE INPUT FAB (mobile only) -->
