@@ -247,7 +247,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Onest',sans-serif;font-si
 .tl-time{font-size:9px;color:var(--t3);white-space:nowrap}
 .tl-type{font-size:8.5px;font-weight:600;padding:2px 6px;border-radius:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:64px}
 .tl-client{font-size:8.5px;font-weight:600;padding:2px 6px;border-radius:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px;background:rgba(59,130,246,.13);color:#3B82F6}
-.tl-name{font-size:11px;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;display:flex;flex-direction:column;align-items:flex-start}
+.tl-name{font-size:11px;color:var(--t1);overflow:visible;white-space:normal;word-break:break-word;cursor:pointer;display:flex;flex-direction:column;align-items:flex-start}
 .tl-name:hover{color:var(--blue)}
 .tl-prio{flex-shrink:0}
 .tl-dl{font-size:9px;color:var(--t3);white-space:nowrap;flex-shrink:0}
@@ -2938,7 +2938,7 @@ function renderNodateGroup(dragStartFn,dragEndFn,dropFn){
       <span class="tl-time">${e.t}</span>
       <span class="tl-type ${e.cl}" style="font-size:8.5px;font-weight:600;padding:2px 5px;border-radius:4px;${evColorStyle(e.cl)}">${typeLabel}</span>
       ${tlClientChip(e)}
-      <span class="tl-name" onclick="openCalEditM('no-date',${e.id})"><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">${e.tx}</span>${e.comment?`<span class="tl-comment">${e.comment}</span>`:''}</span>
+      <span class="tl-name" onclick="openCalEditM('no-date',${e.id})"><span>${e.tx}</span>${e.comment?`<span class="tl-comment">${e.comment}</span>`:''}</span>
       <span class="tl-prio">${e.priority?priorityBadge(e):''}</span>
       ${dlTxt?`<span class="tl-dl">до ${dlTxt}</span>`:'<span class="tl-dl"></span>'}
       <button class="tl-del" title="Удалить" onclick="delNodateEv(${e.id})">✕</button>
@@ -3007,7 +3007,7 @@ function renderWeekTaskList(){
           <span class="tl-time">${e.t}</span>
           <span class="tl-type ${e.cl}" style="font-size:8.5px;font-weight:600;padding:2px 5px;border-radius:4px;${evColorStyle(e.cl)}">${typeLabel}</span>
           ${tlClientChip(e)}
-          <span class="tl-name" onclick="${editFn}"><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">${e.tx}</span>${e.comment?`<span class="tl-comment">${e.comment}</span>`:''}</span>
+          <span class="tl-name" onclick="${editFn}"><span>${e.tx}</span>${e.comment?`<span class="tl-comment">${e.comment}</span>`:''}</span>
           <span class="tl-prio">${e.priority?priorityBadge(e):''}</span>
           ${dlTxt?`<span class="tl-dl">до ${dlTxt}</span>`:'<span class="tl-dl"></span>'}
           <button class="tl-del" title="Удалить"${delFn} style="${isCT?'visibility:hidden':''}">✕</button>
@@ -3102,7 +3102,7 @@ function renderMonthTaskList(targetId){
           <span class="tl-time">${e.t}</span>
           <span class="tl-type ${e.cl}" style="font-size:8.5px;font-weight:600;padding:2px 5px;border-radius:4px;${evColorStyle(e.cl)}">${typeLabel}</span>
           ${tlClientChip(e)}
-          <span class="tl-name" onclick="${editFn}"><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">${e.tx}</span>${e.comment?`<span class="tl-comment">${e.comment}</span>`:''}</span>
+          <span class="tl-name" onclick="${editFn}"><span>${e.tx}</span>${e.comment?`<span class="tl-comment">${e.comment}</span>`:''}</span>
           <span class="tl-prio">${e.priority?priorityBadge(e):''}</span>
           ${dlTxt?`<span class="tl-dl">до ${dlTxt}</span>`:'<span class="tl-dl"></span>'}
           <button class="tl-del" title="Удалить"${delFn} style="${isCE||isCT?'visibility:hidden':''}">✕</button>
