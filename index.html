@@ -508,6 +508,16 @@ body{background:var(--bg);color:var(--t1);font-family:'Onest',sans-serif;font-si
 .cd-task-item.done .cd-task-text{text-decoration:line-through;color:var(--t3)}
 .cd-task-del{background:none;border:none;color:var(--t3);cursor:pointer;font-size:13px;padding:0;opacity:0}
 .cd-task-item:hover .cd-task-del{opacity:1}
+.cd-task-edit-btn{background:none;border:none;color:var(--t3);cursor:pointer;font-size:11px;padding:0 2px;opacity:0;line-height:1;margin-right:2px}
+.cd-task-item:hover .cd-task-edit-btn{opacity:.6}
+.cd-task-edit-btn:hover{opacity:1!important;color:var(--blue)}
+.cd-task-edit-form{display:flex;flex-direction:column;gap:5px;flex:1;min-width:0}
+.cd-task-edit-inp{background:var(--s2);border:1px solid var(--blue);border-radius:var(--r);padding:5px 8px;color:var(--t1);font-family:'Onest',sans-serif;font-size:11px;outline:none;width:100%;box-sizing:border-box}
+.cd-task-edit-row{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.cd-task-edit-sel{background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);padding:4px 6px;color:var(--t1);font-family:'Onest',sans-serif;font-size:10px;outline:none;cursor:pointer}
+.cd-task-edit-date{background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);padding:4px 6px;color:var(--t1);font-family:'Onest',sans-serif;font-size:10px;outline:none;cursor:pointer}
+.cd-task-edit-save{background:var(--blue);border:none;border-radius:var(--r);padding:4px 10px;color:#fff;font-family:'Onest',sans-serif;font-size:10px;cursor:pointer}
+.cd-task-edit-cancel{background:none;border:1px solid var(--b1);border-radius:var(--r);padding:4px 8px;color:var(--t3);font-family:'Onest',sans-serif;font-size:10px;cursor:pointer}
 .cd-task-deadline{font-size:9px;color:var(--t3);margin-top:3px;display:inline-flex;align-items:center;gap:3px}
 .cd-task-deadline.overdue{color:var(--coral);font-weight:600}
 .cd-task-deadline.today-dl{color:var(--magenta);font-weight:700}
@@ -3725,6 +3735,7 @@ function renderClientDetail(cid){
     </div>`;
 }
 
+let _cdEditingTask=null;
 function renderClientTasks(cid){
   const cl=clients.find(x=>x.id===cid);if(!cl)return'';
   if(!cl.tasks)cl.tasks=[];
@@ -3732,6 +3743,25 @@ function renderClientTasks(cid){
   const sorted=[...cl.tasks].sort((a,b)=>{const p={high:0,mid:1,low:2};return p[a.priority]-p[b.priority];});
   const todayStr=new Date().toISOString().split('T')[0];
   return sorted.map(t=>{
+    const isEditing=_cdEditingTask&&_cdEditingTask.cid===cid&&_cdEditingTask.tid===t.id;
+    if(isEditing){
+      return`<div class="cd-task-item" style="align-items:flex-start">
+    <input type="checkbox" class="cd-task-cb" ${t.done?'checked':''} onchange="toggleClientTask(${cid},${t.id})">
+    <div class="cd-task-edit-form">
+      <input class="cd-task-edit-inp" id="cde-text-${t.id}" value="${t.text.replace(/"/g,'&quot;')}" onkeydown="if(event.key==='Enter')saveClientTaskEdit(${cid},${t.id});if(event.key==='Escape')cancelClientTaskEdit()">
+      <div class="cd-task-edit-row">
+        <select class="cd-task-edit-sel" id="cde-pr-${t.id}">
+          <option value="high"${t.priority==='high'?' selected':''}>🔴 Высокий</option>
+          <option value="mid"${t.priority==='mid'?' selected':''}>🟡 Средний</option>
+          <option value="low"${t.priority==='low'?' selected':''}>🟢 Низкий</option>
+        </select>
+        <input class="cd-task-edit-date" id="cde-dl-${t.id}" type="date" value="${t.deadline||''}">
+        <button class="cd-task-edit-save" onclick="saveClientTaskEdit(${cid},${t.id})">Сохранить</button>
+        <button class="cd-task-edit-cancel" onclick="cancelClientTaskEdit()">Отмена</button>
+      </div>
+    </div>
+  </div>`;
+    }
     const hasDeadline=t.deadline&&t.deadline.length>0;
     const overdue=hasDeadline&&t.deadline<todayStr&&!t.done;
     const isToday=hasDeadline&&t.deadline===todayStr;
@@ -3745,9 +3775,32 @@ function renderClientTasks(cid){
         ${dlHtml}
       </div>
     </div>
+    <button class="cd-task-edit-btn" onclick="openClientTaskEdit(${cid},${t.id})" title="Редактировать">✎</button>
     <button class="cd-task-del" onclick="delClientTask(${cid},${t.id})">✕</button>
   </div>`;
   }).join('');
+}
+function openClientTaskEdit(cid,tid){
+  _cdEditingTask={cid,tid};
+  const ct=document.getElementById('cdTasks-'+cid);if(ct)ct.innerHTML=renderClientTasks(cid);
+  document.getElementById('cde-text-'+tid)?.focus();
+}
+function cancelClientTaskEdit(){
+  const cid=_cdEditingTask?.cid;_cdEditingTask=null;
+  if(cid!=null){const ct=document.getElementById('cdTasks-'+cid);if(ct)ct.innerHTML=renderClientTasks(cid);}
+}
+function saveClientTaskEdit(cid,tid){
+  const cl=clients.find(x=>x.id===cid);if(!cl)return;
+  const t=cl.tasks.find(x=>x.id===tid);if(!t)return;
+  const txt=document.getElementById('cde-text-'+tid)?.value.trim();
+  if(!txt)return;
+  t.text=txt;
+  t.priority=document.getElementById('cde-pr-'+tid)?.value||t.priority;
+  t.deadline=document.getElementById('cde-dl-'+tid)?.value||'';
+  _cdEditingTask=null;
+  saveClientsLS();
+  const ct=document.getElementById('cdTasks-'+cid);if(ct)ct.innerHTML=renderClientTasks(cid);
+  renderAllClientTasks();
 }
 
 function addClientTask(cid){
