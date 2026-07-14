@@ -277,13 +277,21 @@ body{background:var(--bg);color:var(--t1);font-family:'Onest',sans-serif;font-si
   .tl-filters::-webkit-scrollbar{display:none}
   .tl-filter-chip{font-size:9px;padding:3px 9px;white-space:nowrap;flex-shrink:0}
   .tl-add-btn{min-height:36px;padding:0 10px}
-  /* Строка задачи: скрываем тип, показываем важное */
+  /* Строка задачи: чипы на первой строке, название на второй */
   .tl-row{
-    grid-template-columns:22px 34px 1fr auto auto 18px;
-    gap:6px;padding:8px 12px;font-size:11px
+    grid-template-columns:22px 34px auto auto 1fr auto auto 18px;
+    grid-template-rows:auto auto;
+    grid-template-areas:"chk time type cl . . . del" "chk time name name name prio dl del";
+    gap:2px 6px;padding:8px 12px;font-size:11px;align-items:center
   }
-  .tl-type{display:none}
-  .tl-client{display:none}
+  .tl-chk{grid-area:chk;align-self:center}
+  .tl-time{grid-area:time;align-self:center}
+  .tl-type{display:inline-flex;grid-area:type;max-width:none;align-self:end}
+  .tl-client{display:inline-flex;grid-area:cl;max-width:none;align-self:end}
+  .tl-name{grid-area:name;white-space:normal}
+  .tl-prio{grid-area:prio}
+  .tl-dl{grid-area:dl;font-size:8.5px}
+  .tl-del{grid-area:del;align-self:center}
   .tl-dl{font-size:8.5px}
   .tl-day-hdr{padding:8px 12px}
   .tl-day-name{font-size:9.5px}
@@ -618,6 +626,11 @@ select.mi{-webkit-appearance:none;cursor:pointer}
 .fin-leg{display:flex;align-items:center;gap:3px;font-size:7.5px;color:var(--t3)}
 .fin-leg-dot{width:8px;height:5px;border-radius:1.5px;flex-shrink:0}
 .fin-tables-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fin-all-tables{display:grid;grid-template-columns:1fr 1fr;gap:14px;grid-template-areas:"inc sit-inc" "exp sit-exp"}
+#finIncWrap{grid-area:inc}
+#finSitIncWrap{grid-area:sit-inc}
+#finExpWrap{grid-area:exp}
+#finSitExpWrap{grid-area:sit-exp}
 .fin-table-wrap{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r2);padding:14px;min-width:0}
 .fin-table-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
 .fin-table-title{font-family:'Unbounded',sans-serif;font-size:11px;font-weight:700}
@@ -650,6 +663,14 @@ select.mi{-webkit-appearance:none;cursor:pointer}
 .fin-sit-hdr{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);font-family:'Unbounded',sans-serif;margin-bottom:2px}
 .fin-pay-mgr-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1100;display:none;align-items:center;justify-content:center;padding:16px}
 .fin-pay-mgr-overlay.show{display:flex}
+
+/* Voice input FAB */
+.voice-fab{position:fixed;bottom:76px;right:16px;width:48px;height:48px;border-radius:50%;background:var(--magenta);color:#fff;border:none;cursor:pointer;display:none;align-items:center;justify-content:center;font-size:20px;z-index:200;box-shadow:0 4px 16px rgba(196,48,106,.4);transition:transform .15s,background .15s}
+.voice-fab:hover{transform:scale(1.08);background:#a5235a}
+.voice-fab.listening{background:#C4306A;animation:voicePulse 1s infinite}
+@keyframes voicePulse{0%,100%{box-shadow:0 4px 16px rgba(196,48,106,.4)}50%{box-shadow:0 4px 24px rgba(196,48,106,.7),0 0 0 8px rgba(196,48,106,.15)}}
+.voice-toast{position:fixed;bottom:136px;right:16px;background:var(--s2);border:1px solid var(--b2);border-radius:12px;padding:8px 14px;font-size:11px;color:var(--t2);display:none;z-index:201;max-width:220px;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,.15)}
+@media(max-width:768px){.voice-fab{display:flex}}
 
 .habits-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
 .habits-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
@@ -883,8 +904,8 @@ select.mi{-webkit-appearance:none;cursor:pointer}
   .cvs-btn{font-size:11px;padding:10px 0}
 
   /* Вид недели */
-  #calViewWeek{flex-direction:column;overflow-y:visible;overflow-x:hidden;flex:none;display:flex}
-  .week-left{overflow-y:visible;padding:0;flex:none;min-width:0}
+  #calViewWeek{flex-direction:column;overflow:visible;flex:none;display:flex}
+  .week-left{overflow-y:visible;overflow-x:hidden;padding:0;flex:none;min-width:0}
 
   /* Вид месяца */
   #calViewMonth:not(.cal-view-hidden){
@@ -1037,6 +1058,7 @@ select.mi{-webkit-appearance:none;cursor:pointer}
   .fin-charts-wrap{grid-template-columns:1fr}
   .fin-tables-row{grid-template-columns:1fr}
   .fin-sit-section{grid-template-columns:1fr}
+  .fin-all-tables{grid-template-columns:1fr;grid-template-areas:"inc" "sit-inc" "exp" "sit-exp"}
   .fin-chips{gap:6px}
   .fin-chip{font-size:10px;padding:5px 10px}
   /* На тач — кнопки удаления/редактирования всегда видны */
@@ -1801,8 +1823,8 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
       </div>
     </div>
   </div>
-  <div class="fin-tables-row">
-    <div class="fin-table-wrap">
+  <div class="fin-all-tables">
+    <div class="fin-table-wrap" id="finIncWrap">
       <div class="fin-table-hdr">
         <span class="fin-table-title inc">Доходы</span>
         <button class="add-btn" onclick="openFinModal('income',null)">+ Добавить</button>
@@ -1810,17 +1832,7 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
       <div id="finIncomeTable"></div>
       <div class="fin-table-footer"><span>Итого</span><strong id="finTotalInc">0 ₽</strong></div>
     </div>
-    <div class="fin-table-wrap">
-      <div class="fin-table-hdr">
-        <span class="fin-table-title exp">Расходы</span>
-        <button class="add-btn" onclick="openFinModal('expense',null)">+ Добавить</button>
-      </div>
-      <div id="finExpenseTable"></div>
-      <div class="fin-table-footer"><span>Итого</span><strong id="finTotalExp">0 ₽</strong></div>
-    </div>
-  </div>
-  <div class="fin-sit-section">
-    <div class="fin-table-wrap">
+    <div class="fin-table-wrap" id="finSitIncWrap">
       <div class="fin-table-hdr">
         <div><div class="fin-sit-hdr">Ситуативные</div><span class="fin-table-title inc">Доходы</span></div>
         <button class="add-btn" onclick="openFinSitModal('income',null)">+ Добавить</button>
@@ -1828,7 +1840,15 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
       <div id="finSitIncTable"></div>
       <div class="fin-table-footer"><span>Итого</span><strong id="finSitTotalInc">0 ₽</strong></div>
     </div>
-    <div class="fin-table-wrap">
+    <div class="fin-table-wrap" id="finExpWrap">
+      <div class="fin-table-hdr">
+        <span class="fin-table-title exp">Расходы</span>
+        <button class="add-btn" onclick="openFinModal('expense',null)">+ Добавить</button>
+      </div>
+      <div id="finExpenseTable"></div>
+      <div class="fin-table-footer"><span>Итого</span><strong id="finTotalExp">0 ₽</strong></div>
+    </div>
+    <div class="fin-table-wrap" id="finSitExpWrap">
       <div class="fin-table-hdr">
         <div><div class="fin-sit-hdr">Ситуативные</div><span class="fin-table-title exp">Расходы</span></div>
         <button class="add-btn" onclick="openFinSitModal('expense',null)">+ Добавить</button>
@@ -2554,13 +2574,17 @@ function goTo(s,focusId){
   }
   document.getElementById('sidebar').classList.remove('sb-open');
   document.getElementById('sbBackdrop').classList.remove('show');
-  if(s==='week')renderWeek();
-  if(s==='focus'){renderGoals();renderFocusScreen();if(focusId)setTimeout(()=>{const el=document.getElementById('fcard-'+focusId);if(el)el.scrollIntoView({behavior:'smooth'});},100);}
-  if(s==='clients')renderClients();
-  if(s==='habits')renderHabits();
-  if(s==='notes')renderNotes();
-  if(s==='bytovka')renderBytovka();
-  if(s==='finance')renderFinance();
+  // Reset scroll position of the target screen
+  const scr=document.getElementById('screen-'+s);if(scr)scr.scrollTop=0;
+  requestAnimationFrame(()=>{
+    if(s==='week')renderWeek();
+    if(s==='focus'){renderGoals();renderFocusScreen();if(focusId)setTimeout(()=>{const el=document.getElementById('fcard-'+focusId);if(el)el.scrollIntoView({behavior:'smooth'});},100);}
+    if(s==='clients')renderClients();
+    if(s==='habits')renderHabits();
+    if(s==='notes')renderNotes();
+    if(s==='bytovka')renderBytovka();
+    if(s==='finance')renderFinance();
+  });
 }
 
 function toggleSidebar(){
@@ -3057,8 +3081,10 @@ function chMonth(d){curMonth=new Date(curMonth.getFullYear(),curMonth.getMonth()
 function getDayEvs(y,m,d,skipGhosts){
   const key=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
   const custom=mevs[key]||[];
+  // Exclude client tasks whose client is already represented by a mevs event on this day (avoids duplication)
+  const mevClientIds=new Set(custom.filter(e=>e.clientId).map(e=>e.clientId));
   const ctasks=[];
-  clients.forEach(cl=>{(cl.tasks||[]).forEach(t=>{if(t.deadline===key)ctasks.push({id:t.id,t:'00:00',tx:cl.name+': '+t.text,cl:'ev-client',done:t.done,priority:t.priority,deadline:t.deadline,_cid:cl.id,_ctask:true});});});
+  clients.forEach(cl=>{if(mevClientIds.has(cl.id))return;(cl.tasks||[]).forEach(t=>{if(t.deadline===key)ctasks.push({id:t.id,t:'00:00',tx:cl.name+': '+t.text,cl:'ev-client',done:t.done,priority:t.priority,deadline:t.deadline,_cid:cl.id,_ctask:true});});});
   let base=[];
   if(y===2026&&m===4&&d>=11&&d<=17)base=calEvs.filter(e=>e.day===d-11);
   // Призрачные события: задачи других дней с дедлайном в этот день
@@ -4922,7 +4948,53 @@ loadFinData();
 pomoRender();
 renderWeek();
 renderSidebar();
+
+// ═══════════════════════════════════════════════════════════════════
+// VOICE INPUT
+// ═══════════════════════════════════════════════════════════════════
+let voiceRecognition=null;let voiceActive=false;
+function toggleVoiceInput(){
+  if(!('webkitSpeechRecognition' in window||'SpeechRecognition' in window)){
+    alert('Ваш браузер не поддерживает голосовой ввод. Попробуйте Chrome.');return;
+  }
+  if(voiceActive){stopVoice();return;}
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  voiceRecognition=new SR();
+  voiceRecognition.lang='ru-RU';
+  voiceRecognition.interimResults=false;
+  voiceRecognition.maxAlternatives=1;
+  voiceActive=true;
+  const fab=document.getElementById('voiceFab');
+  const toast=document.getElementById('voiceToast');
+  fab.classList.add('listening');fab.textContent='⏹';
+  toast.style.display='block';toast.textContent='Слушаю...';
+  voiceRecognition.onresult=e=>{
+    const text=e.results[0][0].transcript.trim();
+    stopVoice();
+    toast.style.display='block';toast.textContent='«'+text+'»';
+    setTimeout(()=>{toast.style.display='none';},2500);
+    // Open calendar modal pre-filled with recognized text
+    openCalAdd(null,null);
+    setTimeout(()=>{
+      const inp=document.getElementById('cmTxt');
+      if(inp){inp.value=text;inp.focus();}
+    },50);
+  };
+  voiceRecognition.onerror=()=>{stopVoice();toast.style.display='none';};
+  voiceRecognition.onend=()=>{if(voiceActive)stopVoice();};
+  voiceRecognition.start();
+}
+function stopVoice(){
+  voiceActive=false;
+  const fab=document.getElementById('voiceFab');
+  fab.classList.remove('listening');fab.textContent='🎤';
+  if(voiceRecognition){try{voiceRecognition.stop();}catch(e){}voiceRecognition=null;}
+}
 </script>
+
+<!-- VOICE INPUT FAB (mobile only) -->
+<button class="voice-fab" id="voiceFab" onclick="toggleVoiceInput()" title="Голосовой ввод задачи">🎤</button>
+<div class="voice-toast" id="voiceToast">Слушаю...</div>
 
 <!-- BOTTOM NAV (mobile only) -->
 <nav class="bottom-nav" id="bottomNav">
