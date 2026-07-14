@@ -916,7 +916,7 @@ select.mi{-webkit-appearance:none;cursor:pointer}
   .bnav.active span{font-weight:700}
 
   /* ── CALENDAR SCREEN (объединённый) ── */
-  #screen-week,#screen-week.active{padding:0;overflow-y:auto;overflow-x:hidden;flex-direction:column}
+  #screen-week,#screen-week.active{padding:0;overflow-y:auto;overflow-x:clip;flex-direction:column;min-height:0}
 
   /* Переключатель Неделя/Месяц */
   .cal-view-switcher{padding:10px 14px 12px;position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--b1)}
