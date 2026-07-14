@@ -229,7 +229,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Onest',sans-serif;font-si
 .tl-day-group:last-child{border-bottom:none}
 .tl-day-group.collapsed>.tl-day-hdr{border-bottom:none}
 .tl-day-group.collapsed .tl-row,.tl-day-group.collapsed .tl-empty,.tl-day-group.collapsed .ats-add-form,.tl-nodate-group.collapsed .tl-row,.tl-nodate-group.collapsed .tl-empty{display:none}
-.tl-day-hdr{cursor:pointer}
+.tl-day-hdr{cursor:pointer;display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--s2);border-bottom:1px solid var(--b1)}
 .tl-day-hdr::before{content:'▾';font-size:16px;color:var(--t1);opacity:.6;transition:transform .2s;display:inline-block;flex-shrink:0;margin-right:4px;font-weight:700}
 .tl-day-hdr:hover::before{opacity:1}
 .tl-day-group.collapsed>.tl-day-hdr::before{transform:rotate(-90deg)}
@@ -237,7 +237,6 @@ body{background:var(--bg);color:var(--t1);font-family:'Onest',sans-serif;font-si
 .tl-nodate-hdr::before{content:'▾';font-size:16px;color:var(--magenta);opacity:.8;transition:transform .2s;display:inline-block;flex-shrink:0;margin-right:4px;font-weight:700}
 .tl-nodate-hdr:hover::before{opacity:1}
 .tl-nodate-group.collapsed>.tl-nodate-hdr::before{transform:rotate(-90deg)}
-.tl-day-hdr{display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--s2);border-bottom:1px solid var(--b1)}
 .tl-nodate-group{border-bottom:2px solid var(--magenta);background:rgba(196,48,106,.03)}
 .tl-nodate-hdr{display:flex;align-items:center;gap:8px;padding:8px 14px;background:rgba(196,48,106,.07);border-bottom:1px solid rgba(196,48,106,.2)}
 .tl-nodate-label{font-size:10px;font-weight:700;color:var(--magenta);font-family:'Unbounded',sans-serif;flex:1;letter-spacing:.02em}
@@ -2992,7 +2991,8 @@ function renderWeekTaskList(){
   }
   // Collect all tasks for these keys directly from mevs + client tasks
   const todayKey=dateKeyFromDate(new Date());
-  let html=renderNodateGroup('tlDragStart','tlDragEnd','tlDrop');
+  const nodateHtml=renderNodateGroup('tlDragStart','tlDragEnd','tlDrop');
+  let html='';
   let wTotal=0;
   // Iterate only over existing mevs keys that fall in this week
   const dayKeys=[...weekKeys].sort();
@@ -3042,8 +3042,13 @@ function renderWeekTaskList(){
   });
   const el=document.getElementById('weekTaskList');if(!el)return;
   const ndTotal=(mevs['no-date']||[]).length;
-  const emptyMsg=(wTotal+ndTotal)===0?`<div class="tl-empty" style="padding:20px 16px;text-align:center">Задач на этой неделе нет · <span style="cursor:pointer;color:var(--blue)" onclick="openCalAdd(null,null)">добавить</span></div>`:`<div class="tl-empty" style="padding:20px 16px;text-align:center">Нет задач по фильтру «${tlFilter==='done'?'Выполнены':'Активные'}»</div>`;
-  el.innerHTML=html||emptyMsg;
+  if(wTotal===0&&ndTotal===0){
+    el.innerHTML=`<div class="tl-empty" style="padding:20px 16px;text-align:center">Задач на этой неделе нет · <span style="cursor:pointer;color:var(--blue)" onclick="openCalAdd(null,null)">добавить</span></div>`;
+  } else if(!html&&tlFilter!=='all'){
+    el.innerHTML=nodateHtml+`<div class="tl-empty" style="padding:20px 16px;text-align:center">Нет задач по фильтру «${tlFilter==='done'?'Выполнены':'Активные'}»</div>`;
+  } else {
+    el.innerHTML=nodateHtml+html;
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -3718,7 +3723,7 @@ function switchCdTab(tab){
   document.getElementById('cdTabAvito').classList.toggle('active',tab==='avito');
   renderClientDetail(openClientId);
 }
-function closeClientDetail(){document.getElementById('clientDetail').classList.remove('show');openClientId=null;renderClients();}
+function closeClientDetail(){document.getElementById('clientDetail').classList.remove('show');openClientId=null;_cdEditingTask=null;renderClients();}
 
 function renderClientDetail(cid){
   const cl=clients.find(x=>x.id===cid);if(!cl)return;
