@@ -227,6 +227,10 @@ body{background:var(--bg);color:var(--t1);font-family:'Onest',sans-serif;font-si
 .tasklist-title{font-family:'Unbounded',sans-serif;font-size:11px;font-weight:600;color:var(--t2)}
 .tl-day-group{border-bottom:1px solid var(--b1)}
 .tl-day-group:last-child{border-bottom:none}
+.tl-day-group.collapsed>.tl-day-hdr{border-bottom:none}
+.tl-day-group.collapsed .tl-row,.tl-day-group.collapsed .tl-empty,.tl-day-group.collapsed .ats-add-form,.tl-nodate-group.collapsed .tl-row,.tl-nodate-group.collapsed .tl-empty{display:none}
+.tl-collapse-btn{background:none;border:none;cursor:pointer;color:var(--t3);font-size:12px;padding:0 2px;line-height:1;transition:transform .2s;flex-shrink:0}
+.collapsed .tl-collapse-btn{transform:rotate(-90deg)}
 .tl-day-hdr{display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--s2);border-bottom:1px solid var(--b1)}
 .tl-nodate-group{border-bottom:2px solid var(--magenta);background:rgba(196,48,106,.03)}
 .tl-nodate-hdr{display:flex;align-items:center;gap:8px;padding:8px 14px;background:rgba(196,48,106,.07);border-bottom:1px solid rgba(196,48,106,.2)}
@@ -2935,10 +2939,15 @@ function tlDrop(e,tgtKey){
   tlDragId=null;tlDragSrcKey=null;
 }
 
+function toggleDayGroup(btn){
+  const grp=btn.closest('.tl-day-group,.tl-nodate-group');
+  if(grp)grp.classList.toggle('collapsed');
+}
+
 function renderNodateGroup(dragStartFn,dragEndFn,dropFn){
   const evs=mevs['no-date']||[];
   if(!evs.length)return`<div class="tl-nodate-group" ondragover="tlDragOver(event)" ondragleave="tlDragLeave(event)" ondrop="${dropFn}(event,'no-date')">
-    <div class="tl-nodate-hdr"><span class="tl-nodate-label">📋 Без даты</span><span class="tl-nodate-hint">Перетащите задачу на нужный день</span><button class="tl-add-btn" onclick="openCalAdd(null,'no-date')">+ добавить</button></div>
+    <div class="tl-nodate-hdr"><button class="tl-collapse-btn" onclick="toggleDayGroup(this)" title="Свернуть/развернуть">▾</button><span class="tl-nodate-label">📋 Без даты</span><span class="tl-nodate-hint">Перетащите задачу на нужный день</span><button class="tl-add-btn" onclick="openCalAdd(null,'no-date')">+ добавить</button></div>
     <div class="tl-empty">нет задач без даты</div></div>`;
   const rows=evs.map(e=>{
     const typeLabel=TYPE_LABELS[e.cl]||'Другое';
@@ -2955,7 +2964,7 @@ function renderNodateGroup(dragStartFn,dragEndFn,dropFn){
     </div>`;
   }).join('');
   return`<div class="tl-nodate-group" ondragover="tlDragOver(event)" ondragleave="tlDragLeave(event)" ondrop="${dropFn}(event,'no-date')">
-    <div class="tl-nodate-hdr"><span class="tl-nodate-label">📋 Без даты</span><span class="tl-nodate-hint">Перетащите задачу на день</span><button class="tl-add-btn" onclick="openCalAdd(null,'no-date')">+ добавить</button></div>
+    <div class="tl-nodate-hdr"><button class="tl-collapse-btn" onclick="toggleDayGroup(this)" title="Свернуть/развернуть">▾</button><span class="tl-nodate-label">📋 Без даты</span><span class="tl-nodate-hint">Перетащите задачу на день</span><button class="tl-add-btn" onclick="openCalAdd(null,'no-date')">+ добавить</button></div>
     ${rows}</div>`;
 }
 function toggleNodateDone(id){
@@ -3001,6 +3010,7 @@ function renderWeekTaskList(){
     const dayShort=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'][(new Date(y,mo-1,d).getDay()+6)%7];
     html+=`<div class="tl-day-group" ondragover="tlDragOver(event)" ondragleave="tlDragLeave(event)" ondrop="tlDrop(event,'${dk}')">
       <div class="tl-day-hdr${isToday?' tl-today':''}">
+        <button class="tl-collapse-btn" onclick="toggleDayGroup(this)" title="Свернуть/развернуть">▾</button>
         <span class="tl-day-name">${dayShort} · ${d} ${MONTHS[mo-1]}</span>
         <span class="tl-day-count">${doneCnt}/${allEvs.length}</span>
         <button class="tl-add-btn" onclick="openCalAdd(null,'${dk}')">+ задачу</button>
@@ -3095,6 +3105,7 @@ function renderMonthTaskList(targetId){
     const dayShort=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'][dayNum];
     html+=`<div class="tl-day-group" ondragover="mtlDragOver(event)" ondragleave="mtlDragLeave(event)" ondrop="mtlDrop(event,'${dk}')">
       <div class="tl-day-hdr${isToday?' tl-today':''}">
+        <button class="tl-collapse-btn" onclick="toggleDayGroup(this)" title="Свернуть/развернуть">▾</button>
         <span class="tl-day-name">${dayShort} · ${d} ${MONTHS[m]}</span>
         <span class="tl-day-count">${doneCnt}/${allEvs.length}</span>
         <button class="tl-add-btn" onclick="openCalAdd(null,'${dk}')">+ задачу</button>
@@ -3622,6 +3633,7 @@ function renderAllClientTasks(){
     const doneCnt=allTasks.filter(t=>t.done).length;
     html+=`<div class="tl-day-group">
       <div class="tl-day-hdr">
+        <button class="tl-collapse-btn" onclick="toggleDayGroup(this)" title="Свернуть/развернуть">▾</button>
         <span class="tl-day-name" style="cursor:pointer" onclick="openClientDetail(${cl.id})">${cl.name}</span>
         <span class="tl-day-count">${doneCnt}/${allTasks.length}</span>
         <button class="tl-add-btn" onclick="toggleAtsAddForm(${cl.id})">+ задачу</button>
