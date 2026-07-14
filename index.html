@@ -1622,7 +1622,7 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
       </div>
       <div class="tasklist-block">
         <div class="tasklist-head">
-          <div class="tasklist-title">Список задач месяца</div>
+          <div class="tasklist-title">Список задач недели</div>
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end">
             <div class="tl-filters">
               <button class="tl-filter-chip active" onclick="setTlFilter('all',this)">Все</button>
@@ -2959,29 +2959,30 @@ function delNodateEv(id){
 }
 
 function renderWeekTaskList(){
-  renderMonthTaskList('weekTaskList');
-}
-function _renderWeekTaskListOld(){
   const el=document.getElementById('weekTaskList');if(!el)return;
   const todayKey=dateKeyFromDate(new Date());
   let html=renderNodateGroup('tlDragStart','tlDragEnd','tlDrop');
+  let wTotal=0,wDone=0;
   DAYS.forEach((dayName,di)=>{
     const dayDate=new Date(curWeek);dayDate.setDate(dayDate.getDate()+di);
     const dk=weekDayKey(curWeek,di);
-    // skipGhosts=true: each task shown once in its own day
-    const allEvs=getDayEvs(dayDate.getFullYear(),dayDate.getMonth(),dayDate.getDate(),true);
+    const allEvs=getDayEvs(dayDate.getFullYear(),dayDate.getMonth(),dayDate.getDate(),true).filter(e=>!e._ghost);
+    if(!allEvs.length)return; // skip empty days
+    wTotal+=allEvs.length;wDone+=allEvs.filter(e=>e.done).length;
     const evs=tlFilter==='active'?allEvs.filter(e=>!e.done):tlFilter==='done'?allEvs.filter(e=>e.done):allEvs;
+    if(!evs.length&&tlFilter!=='all')return;
     const doneCnt=allEvs.filter(e=>e.done).length;
     const isToday=dk===todayKey;
+    const dayShort=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'][(dayDate.getDay()+6)%7];
     html+=`<div class="tl-day-group" ondragover="tlDragOver(event)" ondragleave="tlDragLeave(event)" ondrop="tlDrop(event,'${dk}')">
       <div class="tl-day-hdr${isToday?' tl-today':''}">
-        <span class="tl-day-name">${dayName} · ${dayDate.getDate()} ${MONTHS[dayDate.getMonth()]}</span>
+        <span class="tl-day-name">${dayShort} · ${dayDate.getDate()} ${MONTHS[dayDate.getMonth()]}</span>
         <span class="tl-day-count">${doneCnt}/${allEvs.length}</span>
         <button class="tl-add-btn" onclick="openCalAdd(null,'${dk}')">+ задачу</button>
       </div>
       ${evs.length?evs.map(e=>{
         const isCE=e.day!==undefined;const isCT=e._ctask;
-        const isDraggable=!isCE&&!isCT; // only mevs tasks are draggable
+        const isDraggable=!isCE&&!isCT;
         const chkFn=isCE?`toggleCalEvDone(${e.id})`:isCT?`toggleClientTaskFromCal(${e._cid},${e.id})`:`toggleMEvDone('${dk}',${e.id})`;
         const editFn=isCE?`openCalEdit(${e.id})`:isCT?`openClientDetail(${e._cid})`:`openCalEditM('${dk}',${e.id})`;
         const delFn=isCE||isCT?'':` onclick="delMEv('${dk}',${e.id})"`;
@@ -2997,10 +2998,11 @@ function _renderWeekTaskListOld(){
           ${dlTxt?`<span class="tl-dl">до ${dlTxt}</span>`:'<span class="tl-dl"></span>'}
           <button class="tl-del" title="Удалить"${delFn} style="${isCE||isCT?'visibility:hidden':''}">✕</button>
         </div>`;
-      }).join(''):`<div class="tl-empty">${tlFilter==='all'?`нет задач · <span style="cursor:pointer;color:var(--blue)" onclick="openCalAdd(null,'${dk}')">добавить</span>`:tlFilter==='done'?'нет выполненных':'нет активных'}</div>`}
+      }).join(''):`<div class="tl-empty">нет ${tlFilter==='done'?'выполненных':'активных'}</div>`}
     </div>`;
   });
-  el.innerHTML=html;
+  const ndTotal=(mevs['no-date']||[]).length;
+  el.innerHTML=html||((wTotal+ndTotal)===0?`<div class="tl-empty" style="padding:20px 16px;text-align:center">Задач на этой неделе нет · <span style="cursor:pointer;color:var(--blue)" onclick="openCalAdd(null,null)">добавить</span></div>`:`<div class="tl-empty" style="padding:20px 16px;text-align:center">Нет задач по фильтру «${tlFilter==='done'?'Выполнены':'Активные'}»</div>`);
 }
 
 // ═══════════════════════════════════════════════════════════════════
