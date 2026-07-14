@@ -665,11 +665,11 @@ select.mi{-webkit-appearance:none;cursor:pointer}
 .fin-pay-mgr-overlay.show{display:flex}
 
 /* Voice input FAB */
-.voice-fab{position:fixed;bottom:76px;right:16px;width:48px;height:48px;border-radius:50%;background:var(--magenta);color:#fff;border:none;cursor:pointer;display:none;align-items:center;justify-content:center;font-size:20px;z-index:200;box-shadow:0 4px 16px rgba(196,48,106,.4);transition:transform .15s,background .15s}
+.voice-fab{position:fixed;bottom:76px;left:16px;width:48px;height:48px;border-radius:50%;background:var(--magenta);color:#fff;border:none;cursor:pointer;display:none;align-items:center;justify-content:center;font-size:20px;z-index:200;box-shadow:0 4px 16px rgba(196,48,106,.4);transition:transform .15s,background .15s}
 .voice-fab:hover{transform:scale(1.08);background:#a5235a}
 .voice-fab.listening{background:#C4306A;animation:voicePulse 1s infinite}
 @keyframes voicePulse{0%,100%{box-shadow:0 4px 16px rgba(196,48,106,.4)}50%{box-shadow:0 4px 24px rgba(196,48,106,.7),0 0 0 8px rgba(196,48,106,.15)}}
-.voice-toast{position:fixed;bottom:136px;right:16px;background:var(--s2);border:1px solid var(--b2);border-radius:12px;padding:8px 14px;font-size:11px;color:var(--t2);display:none;z-index:201;max-width:220px;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,.15)}
+.voice-toast{position:fixed;bottom:136px;left:16px;background:var(--s2);border:1px solid var(--b2);border-radius:12px;padding:8px 14px;font-size:11px;color:var(--t2);display:none;z-index:201;max-width:220px;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,.15)}
 @media(max-width:768px){.voice-fab{display:flex}}
 
 .habits-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
@@ -905,7 +905,7 @@ select.mi{-webkit-appearance:none;cursor:pointer}
 
   /* Вид недели */
   #calViewWeek{flex-direction:column;overflow:visible;flex:none;display:flex}
-  .week-left{overflow-y:visible;overflow-x:hidden;padding:0;flex:none;min-width:0}
+  .week-left{overflow:visible;padding:0;flex:none;min-width:0;width:100%}
 
   /* Вид месяца */
   #calViewMonth:not(.cal-view-hidden){
