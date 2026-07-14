@@ -2959,33 +2959,47 @@ function delNodateEv(id){
 }
 
 function renderWeekTaskList(){
-  const el=document.getElementById('weekTaskList');if(!el)return;
+  // Build set of date keys for current week
+  const weekKeys=new Set();
+  for(let di=0;di<7;di++){
+    const d=new Date(curWeek);d.setDate(d.getDate()+di);
+    weekKeys.add(dateKeyFromDate(d));
+  }
+  // Collect all tasks for these keys directly from mevs + client tasks
   const todayKey=dateKeyFromDate(new Date());
   let html=renderNodateGroup('tlDragStart','tlDragEnd','tlDrop');
-  let wTotal=0,wDone=0;
-  DAYS.forEach((dayName,di)=>{
-    const dayDate=new Date(curWeek);dayDate.setDate(dayDate.getDate()+di);
-    const dk=weekDayKey(curWeek,di);
-    const allEvs=getDayEvs(dayDate.getFullYear(),dayDate.getMonth(),dayDate.getDate(),true).filter(e=>!e._ghost);
-    if(!allEvs.length)return; // skip empty days
-    wTotal+=allEvs.length;wDone+=allEvs.filter(e=>e.done).length;
+  let wTotal=0;
+  // Iterate only over existing mevs keys that fall in this week
+  const dayKeys=[...weekKeys].sort();
+  dayKeys.forEach(dk=>{
+    const allRaw=(mevs[dk]||[]);
+    // Also include client tasks with matching deadline
+    const mevClientIds=new Set(allRaw.filter(e=>e.clientId).map(e=>e.clientId));
+    const ctasks=[];
+    clients.forEach(cl=>{
+      if(mevClientIds.has(cl.id))return;
+      (cl.tasks||[]).forEach(t=>{if(t.deadline===dk)ctasks.push({id:t.id,t:'00:00',tx:cl.name+': '+t.text,cl:'ev-client',done:t.done,priority:t.priority,deadline:t.deadline,_cid:cl.id,_ctask:true});});
+    });
+    const allEvs=[...allRaw,...ctasks].sort((a,b)=>a.t.localeCompare(b.t));
+    if(!allEvs.length)return;
+    wTotal+=allEvs.length;
     const evs=tlFilter==='active'?allEvs.filter(e=>!e.done):tlFilter==='done'?allEvs.filter(e=>e.done):allEvs;
     if(!evs.length&&tlFilter!=='all')return;
     const doneCnt=allEvs.filter(e=>e.done).length;
     const isToday=dk===todayKey;
-    const dayShort=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'][(dayDate.getDay()+6)%7];
+    const [y,mo,d]=dk.split('-').map(Number);
+    const dayShort=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'][(new Date(y,mo-1,d).getDay()+6)%7];
     html+=`<div class="tl-day-group" ondragover="tlDragOver(event)" ondragleave="tlDragLeave(event)" ondrop="tlDrop(event,'${dk}')">
       <div class="tl-day-hdr${isToday?' tl-today':''}">
-        <span class="tl-day-name">${dayShort} · ${dayDate.getDate()} ${MONTHS[dayDate.getMonth()]}</span>
+        <span class="tl-day-name">${dayShort} · ${d} ${MONTHS[mo-1]}</span>
         <span class="tl-day-count">${doneCnt}/${allEvs.length}</span>
         <button class="tl-add-btn" onclick="openCalAdd(null,'${dk}')">+ задачу</button>
       </div>
       ${evs.length?evs.map(e=>{
-        const isCE=e.day!==undefined;const isCT=e._ctask;
-        const isDraggable=!isCE&&!isCT;
-        const chkFn=isCE?`toggleCalEvDone(${e.id})`:isCT?`toggleClientTaskFromCal(${e._cid},${e.id})`:`toggleMEvDone('${dk}',${e.id})`;
-        const editFn=isCE?`openCalEdit(${e.id})`:isCT?`openClientDetail(${e._cid})`:`openCalEditM('${dk}',${e.id})`;
-        const delFn=isCE||isCT?'':` onclick="delMEv('${dk}',${e.id})"`;
+        const isCT=e._ctask;const isDraggable=!isCT;
+        const chkFn=isCT?`toggleClientTaskFromCal(${e._cid},${e.id})`:`toggleMEvDone('${dk}',${e.id})`;
+        const editFn=isCT?`openClientDetail(${e._cid})`:`openCalEditM('${dk}',${e.id})`;
+        const delFn=isCT?'':` onclick="delMEv('${dk}',${e.id})"`;
         const typeLabel=TYPE_LABELS[e.cl]||'Другое';
         const dlTxt=e.deadline?e.deadline.slice(5).replace('-','.'):'';
         return`<div class="tl-row${e.done?' tl-done':''}" ${isDraggable?`draggable="true" ondragstart="tlDragStart(event,${e.id},'${dk}')" ondragend="tlDragEnd(event)"`:''}>
@@ -2996,13 +3010,15 @@ function renderWeekTaskList(){
           <span class="tl-name" onclick="${editFn}"><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">${e.tx}</span>${e.comment?`<span class="tl-comment">${e.comment}</span>`:''}</span>
           <span class="tl-prio">${e.priority?priorityBadge(e):''}</span>
           ${dlTxt?`<span class="tl-dl">до ${dlTxt}</span>`:'<span class="tl-dl"></span>'}
-          <button class="tl-del" title="Удалить"${delFn} style="${isCE||isCT?'visibility:hidden':''}">✕</button>
+          <button class="tl-del" title="Удалить"${delFn} style="${isCT?'visibility:hidden':''}">✕</button>
         </div>`;
       }).join(''):`<div class="tl-empty">нет ${tlFilter==='done'?'выполненных':'активных'}</div>`}
     </div>`;
   });
+  const el=document.getElementById('weekTaskList');if(!el)return;
   const ndTotal=(mevs['no-date']||[]).length;
-  el.innerHTML=html||((wTotal+ndTotal)===0?`<div class="tl-empty" style="padding:20px 16px;text-align:center">Задач на этой неделе нет · <span style="cursor:pointer;color:var(--blue)" onclick="openCalAdd(null,null)">добавить</span></div>`:`<div class="tl-empty" style="padding:20px 16px;text-align:center">Нет задач по фильтру «${tlFilter==='done'?'Выполнены':'Активные'}»</div>`);
+  const emptyMsg=(wTotal+ndTotal)===0?`<div class="tl-empty" style="padding:20px 16px;text-align:center">Задач на этой неделе нет · <span style="cursor:pointer;color:var(--blue)" onclick="openCalAdd(null,null)">добавить</span></div>`:`<div class="tl-empty" style="padding:20px 16px;text-align:center">Нет задач по фильтру «${tlFilter==='done'?'Выполнены':'Активные'}»</div>`;
+  el.innerHTML=html||emptyMsg;
 }
 
 // ═══════════════════════════════════════════════════════════════════
