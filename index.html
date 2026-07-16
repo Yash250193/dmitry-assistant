@@ -92,6 +92,25 @@ body{background:var(--bg);color:var(--t1);font-family:'Onest',sans-serif;font-si
 .rule-dot{width:4px;height:4px;border-radius:50%;margin-top:4px;flex-shrink:0}
 .rule-text{color:var(--t2);line-height:1.4;flex:1}
 .rule-key{font-weight:600;color:var(--t3);font-size:9px;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:1px}
+/* Rules edit modal */
+.rem-overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(4px);z-index:300;display:none;align-items:center;justify-content:center}
+.rem-overlay.show{display:flex}
+.rem-box{background:var(--s1);border:1px solid var(--b2);border-radius:var(--r2);padding:24px;width:480px;max-width:94vw;max-height:88vh;display:flex;flex-direction:column;gap:14px;animation:slideIn .2s ease}
+.rem-title{font-size:14px;font-weight:700;color:var(--t1)}
+.rem-list{display:flex;flex-direction:column;gap:8px;overflow-y:auto;max-height:54vh}
+.rem-row{display:grid;grid-template-columns:28px 1fr 1fr auto;gap:6px;align-items:center}
+.rem-color-btn{width:22px;height:22px;border-radius:50%;border:2px solid transparent;cursor:pointer;flex-shrink:0;transition:border-color .15s}
+.rem-color-btn.active{border-color:var(--t1)}
+.rem-swatches{display:flex;gap:4px;align-items:center}
+.rem-inp{background:var(--s2);border:1px solid var(--b2);border-radius:var(--r);padding:5px 8px;color:var(--t1);font-family:'Onest',sans-serif;font-size:11px;outline:none;width:100%;box-sizing:border-box}
+.rem-inp:focus{border-color:var(--blue)}
+.rem-del-btn{background:none;border:none;color:var(--t3);cursor:pointer;font-size:14px;padding:0 4px;opacity:.5;transition:opacity .15s;line-height:1}
+.rem-del-btn:hover{opacity:1;color:var(--coral)}
+.rem-add-btn{background:none;border:1px dashed var(--b3);border-radius:var(--r);padding:6px 10px;color:var(--t3);font-size:11px;cursor:pointer;text-align:center;transition:all .15s}
+.rem-add-btn:hover{border-color:var(--blue);color:var(--blue)}
+.rem-footer{display:flex;justify-content:flex-end;gap:8px}
+.rem-color-picker{display:none;position:absolute;background:var(--s1);border:1px solid var(--b2);border-radius:var(--r);padding:6px;gap:5px;flex-wrap:wrap;width:120px;z-index:10;box-shadow:0 4px 12px rgba(0,0,0,.3)}
+.rem-color-picker.open{display:flex}
 
 /* MAIN */
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden}
@@ -1535,11 +1554,8 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
   <div class="sb-divider"></div>
   <div class="sb-section" style="padding-top:14px;padding-bottom:14px">
     <div class="sb-label">Правила игры</div>
-    <div class="rule-item"><div class="rule-dot" style="background:var(--blue)"></div><div class="rule-text"><span class="rule-key">Фокус</span>Новые идеи → «потом».</div></div>
-    <div class="rule-item"><div class="rule-dot" style="background:var(--green)"></div><div class="rule-text"><span class="rule-key">ИИ</span>100 дней каждый день.</div></div>
-    <div class="rule-item"><div class="rule-dot" style="background:var(--amber)"></div><div class="rule-text"><span class="rule-key">Профиль</span>1 до 100k → клонировать.</div></div>
-    <div class="rule-item"><div class="rule-dot" style="background:var(--coral)"></div><div class="rule-text"><span class="rule-key">150k/мес</span>Безопасность, не потолок.</div></div>
-    <div class="rule-item"><div class="rule-dot" style="background:var(--purple)"></div><div class="rule-text"><span class="rule-key">Сверка</span>Каждое воскресенье.</div></div>
+    <div id="sbGameRules"></div>
+    <div class="sb-edit-link" onclick="openRulesModal()">редактировать →</div>
   </div>
   <div class="sb-divider"></div>
   <div class="sb-section" style="padding-top:12px;padding-bottom:14px">
@@ -2087,6 +2103,19 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
   </div>
 </div>
 
+<!-- RULES MODAL -->
+<div class="rem-overlay" id="remOverlay" onclick="if(event.target===this)closeRulesModal()">
+  <div class="rem-box">
+    <div class="rem-title">Правила игры</div>
+    <div class="rem-list" id="remList"></div>
+    <button class="rem-add-btn" onclick="addRemRule()">+ добавить правило</button>
+    <div class="rem-footer">
+      <button class="mbtn secondary" onclick="closeRulesModal()">Отмена</button>
+      <button class="mbtn primary" onclick="saveRemRules()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
 <!-- GOAL MODAL -->
 <div class="overlay" id="goalOverlay">
   <div class="modal">
@@ -2297,6 +2326,13 @@ let personalGoals=[
   {id:4,name:'Подарки',detail:'Новый год 2026 · близким',color:'#f59e0b'},
 ];
 
+let gameRules=[
+  {id:1,key:'Фокус',text:'Новые идеи → «потом».',color:'#3b82f6'},
+  {id:2,key:'ИИ',text:'100 дней каждый день.',color:'#22c55e'},
+  {id:3,key:'Профиль',text:'1 до 100k → клонировать.',color:'#f59e0b'},
+  {id:4,key:'150k/мес',text:'Безопасность, не потолок.',color:'#f87171'},
+  {id:5,key:'Сверка',text:'Каждое воскресенье.',color:'#a855f7'},
+];
 let clients=[
   {id:1,name:'Долгосрочный (6 мес)',badge:'g',status:'Активный',rows:[['Сейчас','30 000 руб/мес'],['Потенциал','50–80 000 руб/мес','g'],['Рост через','2й профиль + Max/TG + ИИ + сайт']],tasks:[],notes:''},
   {id:2,name:'Отопление · Ростов',badge:'g',status:'Активный',rows:[['Сейчас','20 000 руб/мес'],['Потенциал','100 000+ руб/мес','g'],['Модель','CPA · 10% от сделки 50–300k']],tasks:[],notes:''},
@@ -2343,6 +2379,8 @@ const MONTHS=['Январь','Февраль','Март','Апрель','Май'
 // ── Persistence: цели и календарь ──────────────────────────────────────────────
 function bumpNid(arr){arr.forEach(o=>{if(o&&typeof o.id==='number'&&o.id>=nid)nid=o.id+1;});}
 function saveGoalsLS(){try{localStorage.setItem('metricsData',JSON.stringify(metrics));localStorage.setItem('personalGoalsData',JSON.stringify(personalGoals));}catch(e){}}
+function saveGameRulesLS(){try{localStorage.setItem('gameRulesData',JSON.stringify(gameRules));}catch(e){}}
+function loadGameRulesLS(){try{const d=localStorage.getItem('gameRulesData');if(d){gameRules=JSON.parse(d);bumpNid(gameRules);}}catch(e){}}
 function loadGoalsLS(){
   try{const m=localStorage.getItem('metricsData');if(m)metrics=JSON.parse(m);const p=localStorage.getItem('personalGoalsData');if(p)personalGoals=JSON.parse(p);}catch(e){}
   bumpNid(metrics);bumpNid(personalGoals);
@@ -2655,7 +2693,7 @@ function refreshApp(){
 // SIDEBAR
 // ═══════════════════════════════════════════════════════════════════
 function renderSidebar(){
-  renderSbFocuses();renderSbMetrics();renderSbPersonal();
+  renderSbFocuses();renderSbMetrics();renderSbPersonal();renderGameRules();
 }
 
 function renderSbFocuses(){
@@ -2700,6 +2738,55 @@ function renderSbPersonal(){
     d.innerHTML=`<div class="rule-dot" style="background:${g.color}"></div><div class="rule-text"><span class="rule-key">${g.name}</span>${g.detail}</div>`;
     c.appendChild(d);
   });
+}
+
+function renderGameRules(){
+  const c=document.getElementById('sbGameRules');if(!c)return;
+  c.innerHTML=gameRules.map(r=>`<div class="rule-item"><div class="rule-dot" style="background:${r.color}"></div><div class="rule-text"><span class="rule-key">${r.key}</span>${r.text}</div></div>`).join('');
+}
+
+// ── Rules modal ──────────────────────────────────────────────────────
+const REM_COLORS=['#3b82f6','#22c55e','#f59e0b','#f87171','#a855f7','#e879f9','#2dd4bf','#fb923c'];
+let _remRules=[];
+
+function openRulesModal(){
+  _remRules=gameRules.map(r=>({...r}));
+  _renderRemList();
+  document.getElementById('remOverlay').classList.add('show');
+}
+function closeRulesModal(){document.getElementById('remOverlay').classList.remove('show');}
+
+function _renderRemList(){
+  const list=document.getElementById('remList');
+  list.innerHTML=_remRules.map((r,i)=>`
+    <div class="rem-row" id="remRow${i}">
+      <div style="position:relative">
+        <div class="rem-color-btn" style="background:${r.color}" onclick="toggleRemColor(${i})" title="Цвет"></div>
+        <div class="rem-color-picker" id="remCP${i}">
+          ${REM_COLORS.map(c=>`<div style="width:18px;height:18px;border-radius:50%;background:${c};cursor:pointer;flex-shrink:0" onclick="pickRemColor(${i},'${c}')"></div>`).join('')}
+        </div>
+      </div>
+      <input class="rem-inp" placeholder="Ключ (Фокус)" value="${r.key.replace(/"/g,'&quot;')}" oninput="_remRules[${i}].key=this.value">
+      <input class="rem-inp" placeholder="Описание" value="${r.text.replace(/"/g,'&quot;')}" oninput="_remRules[${i}].text=this.value">
+      <button class="rem-del-btn" onclick="delRemRule(${i})">✕</button>
+    </div>`).join('');
+}
+function toggleRemColor(i){
+  document.querySelectorAll('.rem-color-picker').forEach((el,idx)=>{if(idx!==i)el.classList.remove('open');});
+  document.getElementById('remCP'+i)?.classList.toggle('open');
+}
+function pickRemColor(i,c){
+  _remRules[i].color=c;
+  document.getElementById('remCP'+i)?.classList.remove('open');
+  _renderRemList();
+}
+function delRemRule(i){_remRules.splice(i,1);_renderRemList();}
+function addRemRule(){_remRules.push({id:nid++,key:'',text:'',color:'#3b82f6'});_renderRemList();setTimeout(()=>document.querySelector('#remList .rem-row:last-child .rem-inp')?.focus(),50);}
+function saveRemRules(){
+  gameRules=_remRules.filter(r=>r.key||r.text).map(r=>({...r}));
+  saveGameRulesLS();
+  renderGameRules();
+  closeRulesModal();
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -5104,6 +5191,7 @@ loadFocusData();
 loadChatHistory();
 loadWeekMonthNotes();
 loadGoalsLS();
+loadGameRulesLS();
 loadCalLS();
 loadDSDefs();
 loadDayStatuses();
