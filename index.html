@@ -441,6 +441,35 @@ body{background:var(--bg);color:var(--t1);font-family:'Onest',sans-serif;font-si
 .gbc-desc{font-size:11px;color:var(--t3);line-height:1.5}
 .gbc-edit{font-size:10px;color:var(--t3);cursor:pointer;background:var(--s2);border:1px solid var(--b1);border-radius:5px;padding:3px 8px;transition:all .15s}
 .gbc-edit:hover{border-color:var(--blue);color:var(--blue)}
+/* Month Goal Blocks */
+.mgb{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r2);margin-bottom:10px;overflow:hidden}
+.mgb.mgb-closed{border-color:rgba(34,197,94,.35)}
+.mgb-header{display:flex;align-items:center;gap:10px;padding:13px 16px;cursor:pointer;user-select:none;transition:background .15s}
+.mgb-header:hover{background:var(--s2)}
+.mgb-arrow{font-size:13px;color:var(--t3);transition:transform .2s;flex-shrink:0;display:inline-block}
+.mgb.collapsed .mgb-arrow{transform:rotate(-90deg)}
+.mgb-month{font-size:13px;font-weight:700;color:var(--t1);flex:1}
+.mgb-closed-badge{font-size:9px;font-weight:600;color:var(--green);background:rgba(34,197,94,.12);border-radius:10px;padding:2px 7px;margin-left:6px;vertical-align:middle}
+.mgb-progress{font-size:10px;color:var(--t3);background:var(--s2);border:1px solid var(--b1);border-radius:10px;padding:2px 8px;white-space:nowrap;flex-shrink:0}
+.mgb-close-btn{font-size:10px;padding:4px 10px;border-radius:var(--r);border:1px solid var(--b2);color:var(--t3);background:none;cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0}
+.mgb-close-btn:hover{border-color:var(--green);color:var(--green)}
+.mgb-close-btn.is-closed{border-color:var(--green);color:var(--green);background:rgba(34,197,94,.1)}
+.mgb-body{padding:4px 16px 14px}
+.mgb.collapsed .mgb-body{display:none}
+.mgb-goal{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid var(--b1)}
+.mgb-goal:last-of-type{border-bottom:none}
+.mgb-chk{width:16px;height:16px;border:1.5px solid var(--b3);border-radius:4px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:9px;flex-shrink:0;margin-top:1px;transition:all .15s;color:#fff}
+.mgb-goal.done .mgb-chk{background:var(--green);border-color:var(--green)}
+.mgb-goal-text{font-size:11px;color:var(--t1);flex:1;line-height:1.5}
+.mgb-goal.done .mgb-goal-text{text-decoration:line-through;color:var(--t3)}
+.mgb-goal-del{background:none;border:none;color:var(--t3);cursor:pointer;font-size:12px;opacity:0;padding:0 2px;line-height:1;flex-shrink:0;transition:opacity .15s}
+.mgb-goal:hover .mgb-goal-del{opacity:.45}
+.mgb-goal-del:hover{opacity:1!important;color:var(--coral)}
+.mgb-add-row{display:flex;gap:6px;margin-top:10px}
+.mgb-add-inp{flex:1;background:var(--s2);border:1px solid var(--b2);border-radius:var(--r);padding:6px 10px;color:var(--t1);font-family:'Onest',sans-serif;font-size:11px;outline:none}
+.mgb-add-inp:focus{border-color:var(--blue)}
+.mgb-add-inp::placeholder{color:var(--t3)}
+.mgb-add-submit{background:var(--blue);border:none;border-radius:var(--r);padding:6px 14px;color:#fff;font-size:12px;cursor:pointer;flex-shrink:0}
 .personal-goals-section{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r2);padding:16px}
 .pgs-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
 .pgs-title{font-family:'Unbounded',sans-serif;font-size:13px;font-weight:600}
@@ -1518,9 +1547,9 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
   <div class="sb-divider"></div>
   <!-- METRICS -->
   <div class="sb-section" style="padding-top:14px">
-    <div class="sb-label">Цели к ноябрю 2026</div>
-    <div class="metric-grid" id="sbMetrics"></div>
-    <div class="sb-edit-link" onclick="goTo('goals')">редактировать цели →</div>
+    <div class="sb-label" id="sbMonthLabel">Цели на месяц</div>
+    <div id="sbMetrics"></div>
+    <div class="sb-edit-link" onclick="goTo('focus')">все месяцы →</div>
   </div>
   <div class="sb-divider"></div>
   <!-- PERSONAL -->
@@ -1739,10 +1768,9 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
 <!-- FOCUS -->
 <div class="screen" id="screen-focus">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-    <div class="screen-heading">Цели</div>
-    <button class="add-btn" onclick="openGoalModal(null,'metric')">+ Цель к ноябрю</button>
+    <div class="screen-heading">Цели по месяцам</div>
   </div>
-  <div class="goals-grid" id="metricsGrid"></div>
+  <div id="monthGoalsContainer" style="margin-bottom:24px"></div>
   <div class="personal-goals-section">
     <div class="pgs-header">
       <div class="pgs-title">Личные цели</div>
@@ -2318,6 +2346,14 @@ let metrics=[
   {id:3,val:'20–25k',label:'подписчиков Instagram',color:'purple'},
   {id:4,val:'100k+',label:'профиль ИИ-контент',color:'amber'},
 ];
+let monthGoalBlocks=[
+  {id:1,label:'Июль 2026',    collapsed:false,closed:false,goals:[]},
+  {id:2,label:'Август 2026',  collapsed:true, closed:false,goals:[]},
+  {id:3,label:'Сентябрь 2026',collapsed:true, closed:false,goals:[]},
+  {id:4,label:'Октябрь 2026', collapsed:true, closed:false,goals:[]},
+  {id:5,label:'Ноябрь 2026',  collapsed:true, closed:false,goals:[]},
+  {id:6,label:'Декабрь 2026', collapsed:true, closed:false,goals:[]},
+];
 
 let personalGoals=[
   {id:1,name:'Машина',detail:'Форд Мондео 4 хетчбек · ~1 млн руб',color:'#3b82f6'},
@@ -2378,12 +2414,13 @@ const MONTHS=['Январь','Февраль','Март','Апрель','Май'
 
 // ── Persistence: цели и календарь ──────────────────────────────────────────────
 function bumpNid(arr){arr.forEach(o=>{if(o&&typeof o.id==='number'&&o.id>=nid)nid=o.id+1;});}
-function saveGoalsLS(){try{localStorage.setItem('metricsData',JSON.stringify(metrics));localStorage.setItem('personalGoalsData',JSON.stringify(personalGoals));}catch(e){}}
+function saveGoalsLS(){try{localStorage.setItem('metricsData',JSON.stringify(metrics));localStorage.setItem('personalGoalsData',JSON.stringify(personalGoals));localStorage.setItem('monthGoalBlocksData',JSON.stringify(monthGoalBlocks));}catch(e){}}
 function saveGameRulesLS(){try{localStorage.setItem('gameRulesData',JSON.stringify(gameRules));}catch(e){}}
 function loadGameRulesLS(){try{const d=localStorage.getItem('gameRulesData');if(d){gameRules=JSON.parse(d);bumpNid(gameRules);}}catch(e){}}
 function loadGoalsLS(){
-  try{const m=localStorage.getItem('metricsData');if(m)metrics=JSON.parse(m);const p=localStorage.getItem('personalGoalsData');if(p)personalGoals=JSON.parse(p);}catch(e){}
+  try{const m=localStorage.getItem('metricsData');if(m)metrics=JSON.parse(m);const p=localStorage.getItem('personalGoalsData');if(p)personalGoals=JSON.parse(p);const b=localStorage.getItem('monthGoalBlocksData');if(b)monthGoalBlocks=JSON.parse(b);}catch(e){}
   bumpNid(metrics);bumpNid(personalGoals);
+  monthGoalBlocks.forEach(b=>{bumpNid(b.goals||[]);});
 }
 function saveCalLS(){try{localStorage.setItem('calEvsData',JSON.stringify(calEvs));localStorage.setItem('mevsData',JSON.stringify(mevs));}catch(e){}}
 function loadCalLS(){
@@ -2722,13 +2759,18 @@ function renderSbFocuses(){
 }
 
 function renderSbMetrics(){
-  const c=document.getElementById('sbMetrics');c.innerHTML='';
-  metrics.forEach(m=>{
-    const d=document.createElement('div');d.className='metric-card';
-    d.onclick=()=>goTo('goals');
-    d.innerHTML=`<div class="metric-val ${m.color}">${m.val}</div><div class="metric-label">${m.label}</div>`;
-    c.appendChild(d);
-  });
+  const c=document.getElementById('sbMetrics');if(!c)return;c.innerHTML='';
+  const active=monthGoalBlocks.find(b=>!b.closed)||monthGoalBlocks[0];
+  if(!active){c.innerHTML='<div style="font-size:10px;color:var(--t3)">Все месяцы закрыты 🎉</div>';return;}
+  const lbl=document.getElementById('sbMonthLabel');if(lbl)lbl.textContent=`Цели · ${active.label}`;
+  const goals=active.goals||[];
+  const done=goals.filter(g=>g.done).length;
+  if(!goals.length){c.innerHTML='<div style="font-size:10px;color:var(--t3)">Целей пока нет</div>';return;}
+  c.innerHTML=`<div style="font-size:9px;color:var(--t3);margin-bottom:5px">${done}/${goals.length} выполнено</div>`+
+    goals.slice(0,6).map(g=>`<div style="display:flex;gap:6px;align-items:flex-start;padding:3px 0;font-size:10px">
+      <span style="width:12px;height:12px;border:1.5px solid ${g.done?'var(--green)':'var(--b3)'};border-radius:3px;display:inline-flex;align-items:center;justify-content:center;font-size:8px;color:var(--green);flex-shrink:0;margin-top:1px">${g.done?'✓':''}</span>
+      <span style="color:${g.done?'var(--t3)':'var(--t2)'};${g.done?'text-decoration:line-through;':''}">${g.text.replace(/</g,'&lt;')}</span>
+    </div>`).join('');
 }
 
 function renderSbPersonal(){
@@ -3619,14 +3661,34 @@ document.getElementById('taskOverlay').onclick=e=>{if(e.target===e.currentTarget
 // GOALS SCREEN
 // ═══════════════════════════════════════════════════════════════════
 function renderGoals(){
-  const g=document.getElementById('metricsGrid');g.innerHTML='';
-  metrics.forEach(m=>{
-    const d=document.createElement('div');d.className='goal-big-card';
-    d.innerHTML=`<div class="gbc-header"><div class="gbc-val ${m.color}">${m.val}</div><button class="gbc-edit" onclick="openGoalModal(${m.id},'metric')">✏️</button></div>
-      <div class="gbc-label">${m.label}</div>`;
-    g.appendChild(d);
-  });
-  const pl=document.getElementById('personalList');pl.innerHTML='';
+  const container=document.getElementById('monthGoalsContainer');
+  if(container){
+    container.innerHTML=monthGoalBlocks.map(b=>{
+      const goals=b.goals||[];
+      const done=goals.filter(g=>g.done).length;
+      const total=goals.length;
+      return`<div class="mgb${b.collapsed?' collapsed':''}${b.closed?' mgb-closed':''}" id="mgb-${b.id}">
+        <div class="mgb-header" onclick="toggleMonthBlock(${b.id})">
+          <span class="mgb-arrow">▾</span>
+          <span class="mgb-month">Цели · ${b.label}${b.closed?'<span class="mgb-closed-badge">✓ Закрыт</span>':''}</span>
+          ${total>0?`<span class="mgb-progress">${done}/${total}</span>`:''}
+          <button class="mgb-close-btn${b.closed?' is-closed':''}" onclick="event.stopPropagation();toggleMonthClose(${b.id})">${b.closed?'Переоткрыть':'✓ Закрыть месяц'}</button>
+        </div>
+        <div class="mgb-body">
+          ${goals.map(g=>`<div class="mgb-goal${g.done?' done':''}">
+            <div class="mgb-chk" onclick="toggleMonthGoal(${b.id},${g.id})">${g.done?'✓':''}</div>
+            <span class="mgb-goal-text">${g.text.replace(/</g,'&lt;')}</span>
+            <button class="mgb-goal-del" onclick="delMonthGoal(${b.id},${g.id})">✕</button>
+          </div>`).join('')}
+          <div class="mgb-add-row">
+            <input class="mgb-add-inp" id="mgb-inp-${b.id}" placeholder="Добавить цель..." onkeydown="if(event.key==='Enter')addMonthGoal(${b.id})">
+            <button class="mgb-add-submit" onclick="addMonthGoal(${b.id})">+</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+  const pl=document.getElementById('personalList');if(!pl)return;pl.innerHTML='';
   personalGoals.forEach(g=>{
     const d=document.createElement('div');d.className='pg-item';
     d.innerHTML=`<div class="pg-dot" style="background:${g.color}"></div>
@@ -3635,19 +3697,44 @@ function renderGoals(){
     pl.appendChild(d);
   });
 }
+function toggleMonthBlock(id){
+  const b=monthGoalBlocks.find(x=>x.id===id);if(!b)return;
+  b.collapsed=!b.collapsed;saveGoalsLS();renderGoals();
+}
+function toggleMonthClose(id){
+  const b=monthGoalBlocks.find(x=>x.id===id);if(!b)return;
+  b.closed=!b.closed;saveGoalsLS();renderGoals();renderSidebar();
+}
+function addMonthGoal(bid){
+  const inp=document.getElementById('mgb-inp-'+bid);if(!inp)return;
+  const text=inp.value.trim();if(!text)return;
+  const b=monthGoalBlocks.find(x=>x.id===bid);if(!b)return;
+  if(!b.goals)b.goals=[];
+  b.goals.push({id:nid++,text,done:false});
+  saveGoalsLS();renderGoals();
+  setTimeout(()=>{const el=document.getElementById('mgb-inp-'+bid);if(el)el.focus();},30);
+}
+function toggleMonthGoal(bid,gid){
+  const b=monthGoalBlocks.find(x=>x.id===bid);if(!b)return;
+  const g=(b.goals||[]).find(x=>x.id===gid);if(!g)return;
+  g.done=!g.done;saveGoalsLS();renderGoals();renderSidebar();
+}
+function delMonthGoal(bid,gid){
+  const b=monthGoalBlocks.find(x=>x.id===bid);if(!b)return;
+  b.goals=(b.goals||[]).filter(x=>x.id!==gid);
+  saveGoalsLS();renderGoals();renderSidebar();
+}
 
-// GOAL MODAL
+// GOAL MODAL (personal goals only)
 function openGoalModal(id,type){
-  goalEditId=id;goalEditType=type;
-  const isMetric=type==='metric';
-  const item=id?(isMetric?metrics.find(x=>x.id===id):personalGoals.find(x=>x.id===id)):null;
-  document.getElementById('goalModalTitle').textContent=id?(isMetric?'Редактировать цель':'Редактировать личную цель'):(isMetric?'Добавить цель к ноябрю':'Добавить личную цель');
-  document.getElementById('gmVal').placeholder=isMetric?'300k+':'Машина';
-  document.getElementById('gmLabel').placeholder=isMetric?'руб/мес чистыми':'Форд Мондео 4 ~1 млн руб';
-  document.getElementById('gmVal').value=item?(isMetric?item.val:item.name):'';
-  document.getElementById('gmLabel').value=item?(isMetric?item.label:item.detail):'';
-  document.getElementById('gmColorRow').style.display=isMetric?'block':'none';
-  if(isMetric&&item)document.getElementById('gmColor').value=item.color||'blue';
+  goalEditId=id;goalEditType='personal';
+  const item=id?personalGoals.find(x=>x.id===id):null;
+  document.getElementById('goalModalTitle').textContent=id?'Редактировать личную цель':'Добавить личную цель';
+  document.getElementById('gmVal').placeholder='Машина';
+  document.getElementById('gmLabel').placeholder='Форд Мондео 4 ~1 млн руб';
+  document.getElementById('gmVal').value=item?item.name:'';
+  document.getElementById('gmLabel').value=item?item.detail:'';
+  document.getElementById('gmColorRow').style.display='none';
   document.getElementById('gmDel').style.display=id?'block':'none';
   document.getElementById('goalOverlay').classList.add('show');
 }
