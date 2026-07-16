@@ -1188,6 +1188,33 @@ select.mi{-webkit-appearance:none;cursor:pointer}
   .cd-task-date,
   .cd-pr-sel,
   .mi-sm{font-size:16px !important}
+
+  /* ── МЕСЯЧНЫЕ БЛОКИ ЦЕЛЕЙ mobile ── */
+  .mgb-goals-grid{grid-template-columns:1fr}
+  .mgb-header{padding:12px 14px;gap:8px}
+  .mgb-month{font-size:12px}
+  .mgb-close-btn{font-size:9px;padding:4px 8px}
+  .mgb-body{padding:4px 14px 12px}
+  .mgb-gc-val{font-size:15px}
+  .mgb-add-goal-btn{min-height:44px}
+  .mgb-gc-chk,.mgb-gc-edit{min-height:32px;min-width:32px;display:flex;align-items:center;justify-content:center}
+
+  /* ── МОДАЛ ПРАВИЛ ИГРЫ mobile — bottom sheet ── */
+  .rem-overlay{align-items:flex-end}
+  .rem-box{
+    width:100% !important;max-width:100% !important;
+    border-radius:20px 20px 0 0;
+    padding:16px 16px 28px;
+    max-height:85vh;
+  }
+  .rem-row{grid-template-columns:28px 1fr auto;grid-template-rows:auto auto;row-gap:4px}
+  .rem-row>div:first-child{grid-row:1/3;align-self:center}
+  .rem-row>.rem-del-btn{grid-row:1/3;align-self:center}
+  .rem-row>input:nth-child(3){grid-column:2;grid-row:2}
+  .rem-add-btn,.rem-footer .mbtn{min-height:44px;display:flex;align-items:center;justify-content:center}
+  .rem-footer{gap:8px}
+  .rem-footer .mbtn{flex:1}
+  .rem-inp{font-size:16px !important}
 }
 
 /* ── SAFE AREA (iPhone X+) ── */
@@ -1377,6 +1404,26 @@ body.light{
 
 /* ── GOALS ── */
 .goal-big-card{background:#FFFFFF;border-color:var(--border)}
+/* Month goal blocks — light theme */
+.mgb{background:#FFFFFF;border-color:var(--border)}
+.mgb-header:hover{background:var(--surface)}
+.mgb-month{color:var(--ink)}
+.mgb-progress{background:var(--surface);border-color:var(--border);color:var(--muted)}
+.mgb-close-btn{border-color:var(--border);color:var(--muted)}
+.mgb-goal-card{background:var(--surface);border-color:var(--border)}
+.mgb-gc-val.blue{color:var(--magenta)}.mgb-gc-val.green{color:var(--success)}.mgb-gc-val.amber{color:var(--gold)}
+.mgb-gc-label{color:var(--muted)}
+.mgb-gc-chk,.mgb-gc-edit{background:#FFFFFF;border-color:var(--border);color:var(--muted)}
+.mgb-gc-chk:hover{border-color:#16a34a;color:#16a34a}
+.mgb-goal-card.done .mgb-gc-chk{border-color:#16a34a;color:#16a34a;background:rgba(22,163,74,.08)}
+.mgb-gc-edit:hover{border-color:var(--magenta);color:var(--magenta)}
+.mgb-add-goal-btn{border-color:var(--border);color:var(--muted)}
+.mgb-add-goal-btn:hover{border-color:var(--magenta);color:var(--magenta)}
+/* Rules modal — light theme */
+.rem-box{background:#FFFFFF;border-color:var(--border)}
+.rem-title{color:var(--ink)}
+.rem-inp{background:var(--surface);border-color:var(--border);color:var(--ink)}
+.rem-del-btn{color:var(--muted)}
 .gbc-val.blue{color:var(--magenta)}
 .gbc-val.amber{color:var(--gold)}
 .gbc-val.green{color:var(--success)}
