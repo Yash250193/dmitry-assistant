@@ -2839,7 +2839,7 @@ function renderSbMetrics(){
 }
 
 function renderSbPersonal(){
-  const c=document.getElementById('sbPersonal');c.innerHTML='';
+  const c=document.getElementById('sbPersonal');if(!c)return;c.innerHTML='';
   personalGoals.forEach(g=>{
     const d=document.createElement('div');d.className='rule-item';
     d.innerHTML=`<div class="rule-dot" style="background:${g.color}"></div><div class="rule-text"><span class="rule-key">${g.name}</span>${g.detail}</div>`;
@@ -3919,6 +3919,8 @@ function renderAllClientTasks(){
         return`<div class="tl-row${t.done?' tl-done':''}">
           <span class="tl-chk" onclick="atsToggleTask(${cl.id},${t.id})">${t.done?'✓':''}</span>
           <span class="tl-time" style="min-width:0;width:0"></span>
+          <span class="tl-type"></span>
+          <span class="tl-client"></span>
           <span class="tl-name" onclick="openClientDetail(${cl.id})">${t.text.replace(/</g,'&lt;')}</span>
           <span class="tl-prio">${t.priority?priorityBadge(t):''}</span>
           ${dlTxt?`<span class="tl-dl ${dlCls}">${dlPfx}до ${dlTxt}</span>`:'<span class="tl-dl"></span>'}
