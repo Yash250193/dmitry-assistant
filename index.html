@@ -849,6 +849,8 @@ select.mi{-webkit-appearance:none;cursor:pointer}
 .notes-ta{width:100%;background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);padding:10px 12px;color:var(--t1);font-family:'Onest',sans-serif;font-size:12px;line-height:1.65;outline:none;resize:vertical;min-height:90px;transition:border-color .2s;box-sizing:border-box}
 .notes-ta:focus{border-color:var(--blue)}
 .notes-ta::placeholder{color:var(--t3)}
+.ta-expand-btn{display:block;width:100%;margin-top:3px;padding:3px 0;background:none;border:none;border-top:1px dashed var(--b1);color:var(--t3);font-size:10px;font-family:'Onest',sans-serif;cursor:pointer;text-align:center;transition:color .15s,border-color .15s}
+.ta-expand-btn:hover{color:var(--accent);border-color:var(--accent)}
 
 /* CHAT PANEL */
 .chat-panel{position:fixed;top:52px;right:0;bottom:0;width:440px;background:var(--bg);border-left:1px solid var(--b1);z-index:55;display:none;flex-direction:column;animation:slideInR .2s ease;box-shadow:-4px 0 20px rgba(0,0,0,.4)}
@@ -1375,6 +1377,7 @@ body.light{
 .notes-block{background:#FFFFFF;border-color:var(--border)}
 .notes-block-title{color:var(--muted)}
 .notes-ta{background:#FFFFFF;border-color:var(--border);color:var(--ink);font-family:'Onest',sans-serif}
+.ta-expand-btn{border-color:var(--border);color:var(--muted)}
 .notes-ta:focus{border-color:var(--magenta);box-shadow:0 0 0 3px rgba(196,48,106,0.1)}
 .notes-ta::placeholder{color:var(--muted)}
 .notes-saved{color:var(--success)}
@@ -1749,6 +1752,7 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
           <div class="notes-saved" id="weekNotesSaved">сохранено ✓</div>
         </div>
         <textarea class="notes-ta" id="weekNotesTA" placeholder="Свободные мысли, цели, идеи на эту неделю..." oninput="saveWeekNote(this.value)"></textarea>
+        <button class="ta-expand-btn" onclick="toggleTaExpand(this,'weekNotesTA')">▼ Развернуть</button>
       </div>
       <div class="tasklist-block">
         <div class="tasklist-head">
@@ -1800,6 +1804,7 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
           <div class="notes-saved" id="monthNotesSaved">сохранено ✓</div>
         </div>
         <textarea class="notes-ta" id="monthNotesTA" placeholder="Итоги, планы, размышления по месяцу..." oninput="saveMonthNote(this.value)"></textarea>
+        <button class="ta-expand-btn" onclick="toggleTaExpand(this,'monthNotesTA')">▼ Развернуть</button>
       </div>
       <div class="tasklist-block">
         <div class="tasklist-head">
@@ -2395,7 +2400,7 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
       <div class="mf"><div class="ml">Дедлайн (необязательно)</div><input class="mi" id="bytDeadline" type="date"></div>
     </div>
     <div class="mf"><div class="ml">Бюджет ₽ (необязательно)</div><input class="mi" id="bytBudget" type="number" min="0" placeholder="Например: 5 000"></div>
-    <div class="mf"><div class="ml">Заметка</div><textarea class="mi" id="bytNote" style="height:80px;resize:none;line-height:1.5" placeholder="Подробности, ссылки, мысли..."></textarea></div>
+    <div class="mf"><div class="ml">Заметка</div><textarea class="mi" id="bytNote" style="height:80px;resize:none;line-height:1.5" placeholder="Подробности, ссылки, мысли..."></textarea><button class="ta-expand-btn" onclick="toggleTaExpand(this,'bytNote')">▼ Развернуть</button></div>
     <div class="modal-btns">
       <button class="mbtn danger" id="bytDel" onclick="delBytTask()" style="display:none">Удалить</button>
       <button class="mbtn secondary" onclick="closeBytModal()">Отмена</button>
@@ -4086,6 +4091,7 @@ function renderClientDetail(cid){
     ${cl.urgent?`<div class="urgent" style="display:block;margin-top:8px">${cl.urgent}</div>`:''}
     <div class="cd-section-title" style="margin-top:16px">Заметки</div>
     <textarea class="cd-notes-ta" id="cdNotes-${cid}" placeholder="Договорённости, детали, идеи по клиенту..." oninput="saveClientNote(${cid},this.value)">${cl.notes||''}</textarea>
+    <button class="ta-expand-btn" onclick="toggleTaExpand(this,'cdNotes-${cid}')">▼ Развернуть</button>
     <div class="cd-section-title" style="margin-top:16px">Задачи по клиенту</div>
     <div id="cdTasks-${cid}">${renderClientTasks(cid)}</div>
     <div class="cd-add-task">
@@ -4587,6 +4593,24 @@ function setNoteColor(cn){
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+// TEXTAREA EXPAND
+// ═══════════════════════════════════════════════════════════════════
+function toggleTaExpand(btn,taId){
+  const ta=document.getElementById(taId);if(!ta)return;
+  if(ta.dataset.taExpanded==='1'){
+    ta.dataset.taExpanded='0';
+    ta.style.height='';
+    ta.style.overflowY='';
+    btn.textContent='▼ Развернуть';
+  }else{
+    ta.dataset.taExpanded='1';
+    ta.style.height=ta.scrollHeight+'px';
+    ta.style.overflowY='hidden';
+    btn.textContent='▲ Свернуть';
+  }
+}
+
 // WEEK / MONTH NOTES
 // ═══════════════════════════════════════════════════════════════════
 function saveWeekNote(v){
