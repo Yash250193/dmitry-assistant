@@ -282,6 +282,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Onest',sans-serif;font-si
 .tl-del{background:none;border:none;color:var(--t3);cursor:pointer;font-size:13px;padding:0 4px;opacity:.35;transition:opacity .15s;flex-shrink:0;line-height:1}
 .tl-del:hover,.tl-del:active{opacity:1;color:var(--coral)}
 .tl-empty{padding:10px 14px;font-size:10px;color:var(--t3);font-style:italic}
+.tl-rec-badge{font-size:9px;opacity:.55;vertical-align:middle;margin-right:1px}
 /* Фильтры списка задач */
 .tl-filters{display:flex;gap:4px}
 .tl-filter-chip{background:var(--s3);border:1px solid var(--b2);border-radius:20px;padding:3px 10px;font-size:9.5px;font-family:'Onest',sans-serif;color:var(--t2);cursor:pointer;transition:all .15s;white-space:nowrap}
@@ -2101,12 +2102,28 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
       <div class="ml">Клиент <span style="font-size:9px;color:var(--t3);font-weight:400">(необяз.)</span></div>
       <select class="mi" id="cmClient" onchange="onCmClientChange()"></select>
     </div>
+    <div class="mi-row" id="cmRepeatRow">
+      <div class="mf">
+        <div class="ml">Повторение</div>
+        <select class="mi" id="cmRepeat" onchange="onCmRepeatChange()">
+          <option value="">— нет —</option>
+          <option value="daily">Каждый день</option>
+          <option value="weekly">Каждую неделю</option>
+          <option value="monthly">Каждый месяц</option>
+        </select>
+      </div>
+      <div class="mf" id="cmRepeatCountWrap" style="display:none">
+        <div class="ml">Кол-во раз</div>
+        <input class="mi" type="number" id="cmRepeatCount" min="2" max="365" value="30" placeholder="30">
+      </div>
+    </div>
     <div class="mf">
       <div class="ml">Комментарий <span style="font-size:9px;color:var(--t3);font-weight:400">(необяз.)</span></div>
       <textarea class="mi" id="cmComment" rows="2" placeholder="Свободный текст..." style="resize:vertical;min-height:52px;font-family:'Onest',sans-serif;font-size:13px"></textarea>
     </div>
     <div class="modal-btns">
       <button class="mbtn danger" id="cmDel" onclick="delCalEv()" style="display:none">Удалить</button>
+      <button class="mbtn danger" id="cmDelSeries" onclick="" style="display:none;font-size:10px">Удалить всю серию</button>
       <button class="mbtn secondary" onclick="closeCalModal()">Отмена</button>
       <button class="mbtn primary" onclick="saveCalEv()">Сохранить</button>
     </div>
@@ -2839,7 +2856,7 @@ function renderSbMetrics(){
 }
 
 function renderSbPersonal(){
-  const c=document.getElementById('sbPersonal');c.innerHTML='';
+  const c=document.getElementById('sbPersonal');if(!c)return;c.innerHTML='';
   personalGoals.forEach(g=>{
     const d=document.createElement('div');d.className='rule-item';
     d.innerHTML=`<div class="rule-dot" style="background:${g.color}"></div><div class="rule-text"><span class="rule-key">${g.name}</span>${g.detail}</div>`;
@@ -3226,7 +3243,7 @@ function renderWeekTaskList(){
           <span class="tl-time">${e.t}</span>
           <span class="tl-type ${e.cl}" style="font-size:8.5px;font-weight:600;padding:2px 5px;border-radius:4px;${evColorStyle(e.cl)}">${typeLabel}</span>
           ${tlClientChip(e)}
-          <span class="tl-name" onclick="${editFn}"><span>${e.tx}</span>${e.comment?`<span class="tl-comment">${e.comment}</span>`:''}</span>
+          <span class="tl-name" onclick="${editFn}"><span>${e.recId?'<span class="tl-rec-badge" title="Повторяющаяся задача">🔁</span> ':''}<span>${e.tx}</span></span>${e.comment?`<span class="tl-comment">${e.comment}</span>`:''}</span>
           <span class="tl-prio">${e.priority?priorityBadge(e):''}</span>
           ${dlTxt?`<span class="tl-dl">до ${dlTxt}</span>`:'<span class="tl-dl"></span>'}
           <button class="tl-del" title="Удалить"${delFn} style="${isCT?'visibility:hidden':''}">✕</button>
@@ -3408,6 +3425,20 @@ function renderMRight(){
 // ═══════════════════════════════════════════════════════════════════
 // CALENDAR MODAL
 // ═══════════════════════════════════════════════════════════════════
+function _cmRepeatReset(isEdit){
+  const row=document.getElementById('cmRepeatRow');
+  if(row)row.style.display=isEdit?'none':'';
+  document.getElementById('cmRepeat').value='';
+  document.getElementById('cmRepeatCountWrap').style.display='none';
+}
+function onCmRepeatChange(){
+  const v=document.getElementById('cmRepeat').value;
+  const wrap=document.getElementById('cmRepeatCountWrap');
+  wrap.style.display=v?'':'none';
+  if(v==='daily')document.getElementById('cmRepeatCount').value=30;
+  else if(v==='weekly')document.getElementById('cmRepeatCount').value=12;
+  else if(v==='monthly')document.getElementById('cmRepeatCount').value=6;
+}
 function openCalAdd(day,dateKey){
   calEditId=null;calEditDateKey=null;calEditMEvId=null;
   document.getElementById('calModalTitle').textContent='Добавить задачу';
@@ -3422,7 +3453,9 @@ function openCalAdd(day,dateKey){
   document.getElementById('cmComment').value='';
   document.getElementById('cmDel').style.display='none';
   document.getElementById('cmDel').onclick=delCalEv;
+  _cmRepeatReset(false);
   document.getElementById('calOverlay').classList.add('show');
+  setTimeout(()=>document.getElementById('cmTxt').focus(),80);
 }
 function openCalEdit(id){
   const e=calEvs.find(x=>x.id===id);if(!e)return;
@@ -3438,6 +3471,7 @@ function openCalEdit(id){
   document.getElementById('cmComment').value=e.comment||'';
   document.getElementById('cmDel').style.display='block';
   document.getElementById('cmDel').onclick=delCalEv;
+  _cmRepeatReset(true);
   document.getElementById('calOverlay').classList.add('show');
 }
 function openCalEditM(dk,id){
@@ -3454,7 +3488,17 @@ function openCalEditM(dk,id){
   document.getElementById('cmDeadline').value=e.deadline||'';
   document.getElementById('cmComment').value=e.comment||'';
   document.getElementById('cmDel').style.display='block';
-  document.getElementById('cmDel').onclick=()=>{if(mevs[dk])mevs[dk]=mevs[dk].filter(x=>x.id!==id);saveCalLS();closeCalModal();renderWeek();if(calView==='month'){renderMonth();renderMonthStats();renderMonthTaskList();}};
+  document.getElementById('cmDel').onclick=()=>{
+    if(mevs[dk])mevs[dk]=mevs[dk].filter(x=>x.id!==id);
+    saveCalLS();closeCalModal();renderWeek();
+    if(calView==='month'){renderMonth();renderMonthStats();renderMonthTaskList();}
+  };
+  // Show delete-series button if task is part of a series
+  const recId=e.recId;
+  const delSeriesBtn=document.getElementById('cmDelSeries');
+  if(delSeriesBtn)delSeriesBtn.style.display=recId?'block':'none';
+  if(delSeriesBtn&&recId)delSeriesBtn.onclick=()=>delRecurringSeries(recId);
+  _cmRepeatReset(true);
   document.getElementById('calOverlay').classList.add('show');
 }
 function closeCalModal(){document.getElementById('calOverlay').classList.remove('show');}
@@ -3495,9 +3539,24 @@ function saveCalEv(){
     }
   }else{
     // Новое событие
-    if(!mevs[selectedDate])mevs[selectedDate]=[];
-    mevs[selectedDate].push({id:nid++,t,endTime,tx,cl,priority,deadline,comment,clientId});
-    if(clientId)dupTaskToClient(clientId,tx,priority,selectedDate!=='no-date'?selectedDate:undefined);
+    const repeat=document.getElementById('cmRepeat').value;
+    const repeatCount=repeat?Math.max(1,parseInt(document.getElementById('cmRepeatCount').value)||1):1;
+    if(repeat&&selectedDate!=='no-date'){
+      const recId=nid++;
+      for(let i=0;i<repeatCount;i++){
+        const base=new Date(selectedDate+'T00:00:00');
+        if(repeat==='daily')base.setDate(base.getDate()+i);
+        else if(repeat==='weekly')base.setDate(base.getDate()+i*7);
+        else if(repeat==='monthly')base.setMonth(base.getMonth()+i);
+        const dk=dateKeyFromDate(base);
+        if(!mevs[dk])mevs[dk]=[];
+        mevs[dk].push({id:nid++,t,endTime,tx,cl,priority,deadline,comment,clientId,recId,done:false});
+      }
+    }else{
+      if(!mevs[selectedDate])mevs[selectedDate]=[];
+      mevs[selectedDate].push({id:nid++,t,endTime,tx,cl,priority,deadline,comment,clientId});
+      if(clientId)dupTaskToClient(clientId,tx,priority,selectedDate!=='no-date'?selectedDate:undefined);
+    }
   }
   saveCalLS();
   closeCalModal();renderWeek();if(calView==='month'){renderMonth();renderMonthStats();renderMonthTaskList();}
@@ -3507,6 +3566,10 @@ function dupTaskToClient(clientId,text,priority,deadline){
   if(!cl.tasks)cl.tasks=[];
   cl.tasks.push({id:nid++,text,done:false,priority,deadline});
   saveClientsLS();
+}
+function delRecurringSeries(recId){
+  Object.keys(mevs).forEach(dk=>{mevs[dk]=(mevs[dk]||[]).filter(e=>e.recId!==recId);});
+  saveCalLS();closeCalModal();renderWeek();if(calView==='month'){renderMonth();renderMonthStats();renderMonthTaskList();}
 }
 document.getElementById('calOverlay').onclick=e=>{if(e.target===e.currentTarget)closeCalModal();};
 
@@ -3919,6 +3982,8 @@ function renderAllClientTasks(){
         return`<div class="tl-row${t.done?' tl-done':''}">
           <span class="tl-chk" onclick="atsToggleTask(${cl.id},${t.id})">${t.done?'✓':''}</span>
           <span class="tl-time" style="min-width:0;width:0"></span>
+          <span class="tl-type"></span>
+          <span class="tl-client"></span>
           <span class="tl-name" onclick="openClientDetail(${cl.id})">${t.text.replace(/</g,'&lt;')}</span>
           <span class="tl-prio">${t.priority?priorityBadge(t):''}</span>
           ${dlTxt?`<span class="tl-dl ${dlCls}">${dlPfx}до ${dlTxt}</span>`:'<span class="tl-dl"></span>'}
@@ -5239,8 +5304,10 @@ function renderFinTables(mk){
       const amtCls=type==='income'?'inc':'exp';
       const pt=getFinPayById(e.paymentType);
       const ptChip=pt?`<span class="fin-pay-chip" style="background:${pt.color}20;color:${pt.color};border-color:${pt.color}30">${pt.label}</span>`:'';
-      const editBtn=!isDerived?`<button class="fin-edit-btn" onclick="openFinModal('${type}','${e.id}')">✏</button>`:'';
-      const delBtn=!isDerived?`<button class="fin-del-btn" onclick="delFinDirect('${e.id}')" title="Удалить">✕</button>`:'';
+      const isClientDerived=e.source==='client';
+      const isBytDerived=e.source==='bytovka';
+      const editBtn=isBytDerived?'':(isClientDerived?`<button class="fin-edit-btn" onclick="openClientIncModal(${e.sourceId})">✏</button>`:`<button class="fin-edit-btn" onclick="openFinModal('${type}','${e.id}')">✏</button>`);
+      const delBtn=isBytDerived?'':(isClientDerived?`<button class="fin-del-btn" onclick="delClientInc(${e.sourceId})" title="Убрать доход клиента">✕</button>`:`<button class="fin-del-btn" onclick="delFinDirect('${e.id}')" title="Удалить">✕</button>`);
       return`<div class="fin-entry">
         <div class="fin-entry-top">
           <span class="fin-entry-name">${e.name.replace(/</g,'&lt;')}${srcTag}</span>
@@ -5305,7 +5372,34 @@ function openFinModal(type,id){
   setTimeout(()=>document.getElementById('finName').focus(),100);
 }
 
-function closeFinModal(){document.getElementById('finOverlay').classList.remove('show');finEditId=null;}
+let _finEditClientId=null;
+
+function closeFinModal(){document.getElementById('finOverlay').classList.remove('show');finEditId=null;_finEditClientId=null;}
+
+function openClientIncModal(clId){
+  const cl=clients.find(c=>c.id===clId);if(!cl)return;
+  _finEditClientId=clId;finEditId=null;finEditType='income';
+  document.getElementById('finModalTitle').textContent='Доход · '+cl.name;
+  const sel=document.getElementById('finStatus');
+  sel.innerHTML=`<option value="">Без статуса</option><option value="pending">Не получен</option><option value="done">Получено</option>`;
+  document.getElementById('finName').value=cl.name;
+  document.getElementById('finAmount').value=cl.revenue||'';
+  document.getElementById('finDate').value='';
+  populateFinPayType('finPayType','');
+  const stKey='cl_'+clId+'_'+finMK(finViewMonth);
+  sel.value=finStatuses[stKey]||'';
+  const delBtn=document.getElementById('finDel');
+  delBtn.style.display='block';
+  delBtn.onclick=()=>delClientInc(clId);
+  document.getElementById('finOverlay').classList.add('show');
+  setTimeout(()=>document.getElementById('finAmount').focus(),80);
+}
+
+function delClientInc(clId){
+  const cl=clients.find(c=>c.id===clId);if(!cl)return;
+  cl.revenue=0;
+  saveClientsLS();renderFinance();closeFinModal();
+}
 
 function saveFinEntry(){
   const name=document.getElementById('finName').value.trim();if(!name)return;
@@ -5314,6 +5408,14 @@ function saveFinEntry(){
   const paymentType=document.getElementById('finPayType').value||null;
   const status=document.getElementById('finStatus').value||null;
   const month=date?date.slice(0,7):finMK(finViewMonth);
+  if(_finEditClientId){
+    const cl=clients.find(c=>c.id===_finEditClientId);
+    if(cl){cl.revenue=amount;saveClientsLS();}
+    const stKey='cl_'+_finEditClientId+'_'+finMK(finViewMonth);
+    if(status!==null&&status!==undefined)finStatuses[stKey]=status;
+    saveFinData();renderFinance();closeFinModal();
+    return;
+  }
   if(finEditId){
     const e=finEntries.find(x=>x.id===finEditId);
     if(e)Object.assign(e,{name,amount,date,paymentType,status,month});
