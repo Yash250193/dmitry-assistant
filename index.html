@@ -2112,9 +2112,20 @@ select.mi option{background:#FFFFFF;color:var(--ink)}
           <option value="monthly">Каждый месяц</option>
         </select>
       </div>
+      <div class="mf" id="cmRepeatModeWrap" style="display:none">
+        <div class="ml">Способ</div>
+        <select class="mi" id="cmRepeatMode" onchange="onCmRepeatModeChange()">
+          <option value="count">Кол-во раз</option>
+          <option value="until">До даты</option>
+        </select>
+      </div>
       <div class="mf" id="cmRepeatCountWrap" style="display:none">
         <div class="ml">Кол-во раз</div>
         <input class="mi" type="number" id="cmRepeatCount" min="2" max="365" value="30" placeholder="30">
+      </div>
+      <div class="mf" id="cmRepeatUntilWrap" style="display:none">
+        <div class="ml">До даты</div>
+        <input class="mi" type="date" id="cmRepeatUntil">
       </div>
     </div>
     <div class="mf">
@@ -3429,12 +3440,23 @@ function _cmRepeatReset(isEdit){
   const row=document.getElementById('cmRepeatRow');
   if(row)row.style.display=isEdit?'none':'';
   document.getElementById('cmRepeat').value='';
+  document.getElementById('cmRepeatModeWrap').style.display='none';
   document.getElementById('cmRepeatCountWrap').style.display='none';
+  document.getElementById('cmRepeatUntilWrap').style.display='none';
+  document.getElementById('cmRepeatMode').value='count';
+  document.getElementById('cmRepeatUntil').value='';
+}
+function onCmRepeatModeChange(){
+  const mode=document.getElementById('cmRepeatMode').value;
+  document.getElementById('cmRepeatCountWrap').style.display=mode==='count'?'':'none';
+  document.getElementById('cmRepeatUntilWrap').style.display=mode==='until'?'':'none';
 }
 function onCmRepeatChange(){
   const v=document.getElementById('cmRepeat').value;
-  const wrap=document.getElementById('cmRepeatCountWrap');
-  wrap.style.display=v?'':'none';
+  document.getElementById('cmRepeatModeWrap').style.display=v?'':'none';
+  const mode=document.getElementById('cmRepeatMode').value;
+  document.getElementById('cmRepeatCountWrap').style.display=(v&&mode==='count')?'':'none';
+  document.getElementById('cmRepeatUntilWrap').style.display=(v&&mode==='until')?'':'none';
   if(v==='daily')document.getElementById('cmRepeatCount').value=30;
   else if(v==='weekly')document.getElementById('cmRepeatCount').value=12;
   else if(v==='monthly')document.getElementById('cmRepeatCount').value=6;
@@ -3540,14 +3562,19 @@ function saveCalEv(){
   }else{
     // Новое событие
     const repeat=document.getElementById('cmRepeat').value;
+    const repeatMode=document.getElementById('cmRepeatMode').value;
+    const repeatUntil=document.getElementById('cmRepeatUntil').value;
     const repeatCount=repeat?Math.max(1,parseInt(document.getElementById('cmRepeatCount').value)||1):1;
     if(repeat&&selectedDate!=='no-date'){
       const recId=nid++;
-      for(let i=0;i<repeatCount;i++){
+      const untilDate=repeatMode==='until'&&repeatUntil?new Date(repeatUntil+'T00:00:00'):null;
+      const maxIter=untilDate?730:repeatCount;
+      for(let i=0;i<maxIter;i++){
         const base=new Date(selectedDate+'T00:00:00');
         if(repeat==='daily')base.setDate(base.getDate()+i);
         else if(repeat==='weekly')base.setDate(base.getDate()+i*7);
         else if(repeat==='monthly')base.setMonth(base.getMonth()+i);
+        if(untilDate&&base>untilDate)break;
         const dk=dateKeyFromDate(base);
         if(!mevs[dk])mevs[dk]=[];
         mevs[dk].push({id:nid++,t,endTime,tx,cl,priority,deadline,comment,clientId,recId,done:false});
