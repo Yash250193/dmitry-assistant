@@ -597,6 +597,11 @@ body{background:var(--bg);color:var(--t1);font-family:'Onest',sans-serif;font-si
 .cd-task-deadline{font-size:9px;color:var(--t3);margin-top:3px;display:inline-flex;align-items:center;gap:3px}
 .cd-task-deadline.overdue{color:var(--coral);font-weight:600}
 .cd-task-deadline.today-dl{color:var(--magenta);font-weight:700}
+.cd-task-duedate{font-size:9px;color:var(--t3);margin-top:2px;display:inline-flex;align-items:center;gap:2px}
+.cd-task-duedate.overdue{color:var(--coral);font-weight:600}
+.cd-task-duedate.today-dl{color:var(--magenta);font-weight:700}
+.cd-date-wrap{display:flex;flex-direction:column;gap:2px}
+.cd-date-lbl{font-size:9px;color:var(--t3);padding-left:1px}
 .cd-add-task{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
 .cd-task-inp{flex:1;min-width:120px;background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);padding:7px 10px;color:var(--t1);font-family:'Onest',sans-serif;font-size:11px;outline:none}
 .cd-task-inp:focus{border-color:var(--blue)}
@@ -1134,6 +1139,7 @@ select.mi{-webkit-appearance:none;cursor:pointer}
   /* ── КАРТОЧКА КЛИЕНТА — блок добавления задачи вертикально ── */
   .cd-add-task{flex-direction:column;gap:8px}
   .cd-task-inp,.cd-pr-sel,.cd-task-date,.cd-add-btn{width:100%!important;min-width:0!important;box-sizing:border-box}
+  .cd-date-wrap{width:100%}
   .cd-add-btn{min-height:44px}
 
   /* ── TOUCH TARGETS — мин 44px ── */
@@ -3178,7 +3184,10 @@ function toggleDayGroup(hdr){
 
 function renderNodateGroup(dragStartFn,dragEndFn,dropFn){
   const evs=mevs['no-date']||[];
-  if(!evs.length)return`<div class="tl-nodate-group" ondragover="tlDragOver(event)" ondragleave="tlDragLeave(event)" ondrop="${dropFn}(event,'no-date')">
+  // Client tasks without a calendar date
+  const undatedCTs=[];
+  clients.forEach(cl=>(cl.tasks||[]).forEach(t=>{if(!t.deadline)undatedCTs.push({...t,_cid:cl.id,_clName:cl.name,_ctask:true});}));
+  if(!evs.length&&!undatedCTs.length)return`<div class="tl-nodate-group" ondragover="tlDragOver(event)" ondragleave="tlDragLeave(event)" ondrop="${dropFn}(event,'no-date')">
     <div class="tl-nodate-hdr" onclick="toggleDayGroup(this)"><span class="tl-nodate-label">📋 Без даты</span><span class="tl-nodate-hint">Перетащите задачу на нужный день</span><button class="tl-add-btn" onclick="event.stopPropagation();openCalAdd(null,'no-date')">+ добавить</button></div>
     <div class="tl-empty">нет задач без даты</div></div>`;
   const rows=evs.map(e=>{
@@ -3195,9 +3204,22 @@ function renderNodateGroup(dragStartFn,dragEndFn,dropFn){
       <button class="tl-del" title="Удалить" onclick="delNodateEv(${e.id})">✕</button>
     </div>`;
   }).join('');
+  const ctRows=undatedCTs.map(t=>{
+    const dueTxt=t.dueDate?t.dueDate.slice(5).replace('-','.'):'';
+    return`<div class="tl-row${t.done?' tl-done':''}">
+      <span class="tl-chk" onclick="toggleClientTaskFromCal(${t._cid},${t.id})" title="${t.done?'Снять':'Выполнено'}">${t.done?'✓':''}</span>
+      <span class="tl-time" style="min-width:0;width:0"></span>
+      <span class="tl-type ev-client" style="font-size:8.5px;font-weight:600;padding:2px 5px;border-radius:4px;${evColorStyle('ev-client')}">Клиент</span>
+      <span class="tl-client" style="font-size:9px;opacity:.7">${t._clName}</span>
+      <span class="tl-name" onclick="openClientDetail(${t._cid})">${t.text.replace(/</g,'&lt;')}</span>
+      <span class="tl-prio">${t.priority?priorityBadge(t):''}</span>
+      ${dueTxt?`<span class="tl-dl">до ${dueTxt}</span>`:'<span class="tl-dl"></span>'}
+      <button class="tl-del" style="visibility:hidden">✕</button>
+    </div>`;
+  }).join('');
   return`<div class="tl-nodate-group" ondragover="tlDragOver(event)" ondragleave="tlDragLeave(event)" ondrop="${dropFn}(event,'no-date')">
     <div class="tl-nodate-hdr" onclick="toggleDayGroup(this)"><span class="tl-nodate-label">📋 Без даты</span><span class="tl-nodate-hint">Перетащите задачу на день</span><button class="tl-add-btn" onclick="event.stopPropagation();openCalAdd(null,'no-date')">+ добавить</button></div>
-    ${rows}</div>`;
+    ${rows}${ctRows}</div>`;
 }
 function toggleNodateDone(id){
   const e=(mevs['no-date']||[]).find(x=>x.id===id);if(!e)return;
@@ -3327,6 +3349,7 @@ function renderMonthTaskList(targetId){
   let mTotal=0,mDone=0;
   for(let d=1;d<=dim;d++){const evs=getDayEvs(y,m,d,true).filter(e=>!e._ghost);mTotal+=evs.length;mDone+=evs.filter(e=>e.done).length;}
   const ndEvs=mevs['no-date']||[];mTotal+=ndEvs.length;mDone+=ndEvs.filter(e=>e.done).length;
+  clients.forEach(cl=>(cl.tasks||[]).forEach(t=>{if(!t.deadline){mTotal++;if(t.done)mDone++;}}));
   const titleEl=document.getElementById('monthTaskListTitle');
   if(titleEl)titleEl.innerHTML='Список задач месяца'+(mTotal?` <span style="font-size:9px;font-weight:400;opacity:.6;font-family:'Onest',sans-serif"> · ${mDone}/${mTotal}</span>`:'');
   let html=renderNodateGroup('mtlDragStart','mtlDragEnd','mtlDrop');
@@ -3626,7 +3649,7 @@ function toggleClientTaskFromCal(cid,tid){
   const t=cl.tasks.find(x=>x.id===tid);if(!t)return;
   t.done=!t.done;
   saveClientsLS();
-  if(document.getElementById('screen-week').classList.contains('active'))renderWeek();
+  renderWeekTaskList();
   if(calView==='month'){renderMonth();renderMRight();renderMonthStats();renderMonthTaskList();}
 }
 
@@ -4101,7 +4124,8 @@ function renderClientDetail(cid){
         <option value="mid" selected>🟡 Средний</option>
         <option value="low">🟢 Низкий</option>
       </select>
-      <input class="cd-task-date" id="cdDate-${cid}" type="date" title="Дедлайн — задача появится в календаре">
+      <div class="cd-date-wrap"><div class="cd-date-lbl">Дата</div><input class="cd-task-date" id="cdDate-${cid}" type="date" title="Дата в календаре"></div>
+      <div class="cd-date-wrap"><div class="cd-date-lbl">Дедлайн</div><input class="cd-task-date" id="cdDue-${cid}" type="date" title="Дедлайн задачи"></div>
       <button class="cd-add-btn" onclick="addClientTask(${cid})">Добавить</button>
     </div>`;
 }
@@ -4126,24 +4150,26 @@ function renderClientTasks(cid){
           <option value="mid"${t.priority==='mid'?' selected':''}>🟡 Средний</option>
           <option value="low"${t.priority==='low'?' selected':''}>🟢 Низкий</option>
         </select>
-        <input class="cd-task-edit-date" id="cde-dl-${t.id}" type="date" value="${t.deadline||''}">
+        <div class="cd-date-wrap"><div class="cd-date-lbl">Дата</div><input class="cd-task-edit-date" id="cde-dl-${t.id}" type="date" value="${t.deadline||''}"></div>
+        <div class="cd-date-wrap"><div class="cd-date-lbl">Дедлайн</div><input class="cd-task-edit-date" id="cde-due-${t.id}" type="date" value="${t.dueDate||''}"></div>
         <button class="cd-task-edit-save" onclick="saveClientTaskEdit(${cid},${t.id})">Сохранить</button>
         <button class="cd-task-edit-cancel" onclick="cancelClientTaskEdit()">Отмена</button>
       </div>
     </div>
   </div>`;
     }
-    const hasDeadline=t.deadline&&t.deadline.length>0;
-    const overdue=hasDeadline&&t.deadline<todayStr&&!t.done;
-    const isToday=hasDeadline&&t.deadline===todayStr;
-    const dlHtml=hasDeadline?`<span class="cd-task-deadline${overdue?' overdue':isToday?' today-dl':''}">${overdue?'Просрочено: ':''}${formatDate(t.deadline)}</span>`:'';
+    const calDateHtml=t.deadline?`<span class="cd-task-deadline">📅 ${formatDate(t.deadline)}</span>`:'';
+    const hasDue=!!(t.dueDate&&t.dueDate.length>0);
+    const dueOverdue=hasDue&&t.dueDate<todayStr&&!t.done;
+    const dueToday=hasDue&&t.dueDate===todayStr;
+    const dlHtml=hasDue?`<span class="cd-task-duedate${dueOverdue?' overdue':dueToday?' today-dl':''}">${dueOverdue?'⚠ дедл.:':'⏰ дедл.:'} ${formatDate(t.dueDate)}</span>`:'';
     return`<div class="cd-task-item ${t.done?'done':''}">
     <input type="checkbox" class="cd-task-cb" ${t.done?'checked':''} onchange="toggleClientTask(${cid},${t.id})">
     <div class="cd-task-body">
       <div class="cd-task-text">${t.text}</div>
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:3px">
         <span class="task-priority tp-${t.priority}" style="font-size:9px;padding:1px 5px;border-radius:3px;display:inline-block">${t.priority==='high'?'🔴 Высокий':t.priority==='mid'?'🟡 Средний':'🟢 Низкий'}</span>
-        ${dlHtml}
+        ${calDateHtml}${dlHtml}
       </div>
     </div>
     <button class="cd-task-edit-btn" onclick="openClientTaskEdit(${cid},${t.id})" title="Редактировать">✎</button>
@@ -4168,6 +4194,7 @@ function saveClientTaskEdit(cid,tid){
   t.text=txt;
   t.priority=document.getElementById('cde-pr-'+tid)?.value||t.priority;
   t.deadline=document.getElementById('cde-dl-'+tid)?.value||'';
+  t.dueDate=document.getElementById('cde-due-'+tid)?.value||'';
   _cdEditingTask=null;
   saveClientsLS();
   const ct=document.getElementById('cdTasks-'+cid);if(ct)ct.innerHTML=renderClientTasks(cid);
@@ -4178,12 +4205,14 @@ function addClientTask(cid){
   const inp=document.getElementById('cdInp-'+cid);
   const pr=document.getElementById('cdPr-'+cid);
   const dl=document.getElementById('cdDate-'+cid);
+  const due=document.getElementById('cdDue-'+cid);
   const text=inp.value.trim();if(!text)return;
   const cl=clients.find(x=>x.id===cid);if(!cl)return;
-  cl.tasks.push({id:nid++,text,priority:pr.value,done:false,deadline:dl?dl.value:''});
-  inp.value='';if(dl)dl.value='';
+  cl.tasks.push({id:nid++,text,priority:pr.value,done:false,deadline:dl?dl.value:'',dueDate:due?due.value:''});
+  inp.value='';if(dl)dl.value='';if(due)due.value='';
   saveClientsLS();
   const ct=document.getElementById('cdTasks-'+cid);if(ct)ct.innerHTML=renderClientTasks(cid);
+  renderWeekTaskList();
 }
 function toggleClientTask(cid,tid){
   const cl=clients.find(x=>x.id===cid);if(!cl)return;
