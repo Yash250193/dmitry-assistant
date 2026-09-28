@@ -5304,8 +5304,10 @@ function renderFinTables(mk){
       const amtCls=type==='income'?'inc':'exp';
       const pt=getFinPayById(e.paymentType);
       const ptChip=pt?`<span class="fin-pay-chip" style="background:${pt.color}20;color:${pt.color};border-color:${pt.color}30">${pt.label}</span>`:'';
-      const editBtn=!isDerived?`<button class="fin-edit-btn" onclick="openFinModal('${type}','${e.id}')">✏</button>`:'';
-      const delBtn=!isDerived?`<button class="fin-del-btn" onclick="delFinDirect('${e.id}')" title="Удалить">✕</button>`:'';
+      const isClientDerived=e.source==='client';
+      const isBytDerived=e.source==='bytovka';
+      const editBtn=isBytDerived?'':(isClientDerived?`<button class="fin-edit-btn" onclick="openClientIncModal(${e.sourceId})">✏</button>`:`<button class="fin-edit-btn" onclick="openFinModal('${type}','${e.id}')">✏</button>`);
+      const delBtn=isBytDerived?'':(isClientDerived?`<button class="fin-del-btn" onclick="delClientInc(${e.sourceId})" title="Убрать доход клиента">✕</button>`:`<button class="fin-del-btn" onclick="delFinDirect('${e.id}')" title="Удалить">✕</button>`);
       return`<div class="fin-entry">
         <div class="fin-entry-top">
           <span class="fin-entry-name">${e.name.replace(/</g,'&lt;')}${srcTag}</span>
@@ -5370,7 +5372,34 @@ function openFinModal(type,id){
   setTimeout(()=>document.getElementById('finName').focus(),100);
 }
 
-function closeFinModal(){document.getElementById('finOverlay').classList.remove('show');finEditId=null;}
+let _finEditClientId=null;
+
+function closeFinModal(){document.getElementById('finOverlay').classList.remove('show');finEditId=null;_finEditClientId=null;}
+
+function openClientIncModal(clId){
+  const cl=clients.find(c=>c.id===clId);if(!cl)return;
+  _finEditClientId=clId;finEditId=null;finEditType='income';
+  document.getElementById('finModalTitle').textContent='Доход · '+cl.name;
+  const sel=document.getElementById('finStatus');
+  sel.innerHTML=`<option value="">Без статуса</option><option value="pending">Не получен</option><option value="done">Получено</option>`;
+  document.getElementById('finName').value=cl.name;
+  document.getElementById('finAmount').value=cl.revenue||'';
+  document.getElementById('finDate').value='';
+  populateFinPayType('finPayType','');
+  const stKey='cl_'+clId+'_'+finMK(finViewMonth);
+  sel.value=finStatuses[stKey]||'';
+  const delBtn=document.getElementById('finDel');
+  delBtn.style.display='block';
+  delBtn.onclick=()=>delClientInc(clId);
+  document.getElementById('finOverlay').classList.add('show');
+  setTimeout(()=>document.getElementById('finAmount').focus(),80);
+}
+
+function delClientInc(clId){
+  const cl=clients.find(c=>c.id===clId);if(!cl)return;
+  cl.revenue=0;
+  saveClientsLS();renderFinance();closeFinModal();
+}
 
 function saveFinEntry(){
   const name=document.getElementById('finName').value.trim();if(!name)return;
@@ -5379,6 +5408,14 @@ function saveFinEntry(){
   const paymentType=document.getElementById('finPayType').value||null;
   const status=document.getElementById('finStatus').value||null;
   const month=date?date.slice(0,7):finMK(finViewMonth);
+  if(_finEditClientId){
+    const cl=clients.find(c=>c.id===_finEditClientId);
+    if(cl){cl.revenue=amount;saveClientsLS();}
+    const stKey='cl_'+_finEditClientId+'_'+finMK(finViewMonth);
+    if(status!==null&&status!==undefined)finStatuses[stKey]=status;
+    saveFinData();renderFinance();closeFinModal();
+    return;
+  }
   if(finEditId){
     const e=finEntries.find(x=>x.id===finEditId);
     if(e)Object.assign(e,{name,amount,date,paymentType,status,month});
