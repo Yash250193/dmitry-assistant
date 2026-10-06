@@ -625,7 +625,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Onest',sans-serif;font-si
 /* MODAL */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center}
 .overlay.show{display:flex}
-.modal{background:var(--s1);border:1px solid var(--b2);border-radius:var(--r2);padding:24px;width:460px;max-width:90vw;animation:slideIn .2s ease}
+.modal{background:var(--s1);border:1px solid var(--b2);border-radius:var(--r2);padding:24px;width:460px;max-width:90vw;max-height:92vh;overflow-y:auto;animation:slideIn .2s ease}
 @keyframes slideIn{from{opacity:0;transform:scale(.95) translateY(-10px)}to{opacity:1;transform:none}}
 .modal-title{font-family:'Unbounded',sans-serif;font-size:13px;font-weight:600;margin-bottom:20px}
 .mf{margin-bottom:14px}
@@ -1116,6 +1116,11 @@ select.mi{-webkit-appearance:none;cursor:pointer}
     border-radius:20px 20px 0 0 !important;
     padding:8px 16px 28px !important;
     margin:0 !important;
+    max-height:92dvh !important;
+    overflow-y:auto !important;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+    box-sizing:border-box;
     animation:slideUpSheet .3s cubic-bezier(0.22,1,0.36,1) both;
     box-shadow:0 -4px 40px rgba(26,26,46,0.18) !important;
   }
