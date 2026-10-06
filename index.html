@@ -3050,20 +3050,25 @@ function renderDayTimeGrid(dateKey,evs,chkFnOf,editFnOf,delFnOf,canDelOf,addDate
   linesHtml+=`<div class="day-tg-hline" style="top:${totalH}px"></div>`;
   // Greedy column layout for overlapping events
   const sorted=[...evs].sort((a,b)=>(timeToMin(a.t)||0)-(timeToMin(b.t)||0));
-  const colEnds=[];
-  const layout=sorted.map(e=>{
+  let colEnds=[];let clusterEnd=-1;let cluster=[];
+  const layout=[];
+  const closeCluster=()=>{const n=Math.max(1,colEnds.length);cluster.forEach(it=>{it.numCols=n;});colEnds=[];cluster=[];};
+  sorted.forEach(e=>{
     const s=timeToMin(e.t)??minH*60;
     const en=timeToMin(e.endTime)??(s+60);
+    if(cluster.length&&s>=clusterEnd)closeCluster();
     let col=colEnds.findIndex(c=>c<=s);
     if(col<0)col=colEnds.length;
     colEnds[col]=en;
-    return{e,s,en,col};
+    clusterEnd=cluster.length?Math.max(clusterEnd,en):en;
+    const it={e,s,en,col,numCols:1};
+    cluster.push(it);layout.push(it);
   });
-  const numCols=Math.max(1,colEnds.length);
+  closeCluster();
   // Event blocks HTML
   let evHtml=linesHtml;
   if(showNow)evHtml+=`<div class="day-tg-now" style="top:${nowTop}px"></div>`;
-  layout.forEach(({e,s,en,col})=>{
+  layout.forEach(({e,s,en,col,numCols})=>{
     const top=((s-minH*60)*PX_MIN).toFixed(1);
     const height=Math.max((en-s)*PX_MIN,26).toFixed(1);
     const colW=100/numCols;
