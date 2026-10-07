@@ -4720,7 +4720,20 @@ function saveFocusData(){
   try{localStorage.setItem('focusData',JSON.stringify(focuses));}catch(e){}
   showToast('Сохранено');
 }
-function loadFocusData(){try{const f=localStorage.getItem('focusData');if(f)focuses=JSON.parse(f);}catch(e){}bumpNid(focuses);focuses.forEach(fo=>bumpNid(fo.tasks||[]));}
+function loadFocusData(){try{const f=localStorage.getItem('focusData');if(f)focuses=JSON.parse(f);}catch(e){}bumpNid(focuses);focuses.forEach(fo=>bumpNid(fo.tasks||[]));seedAvitoFocuses();}
+function seedAvitoFocuses(){
+  try{
+    if(localStorage.getItem('seed_avito_focus_v1'))return;
+    const mk=text=>({id:nid++,text,deadline:'',priority:'mid',done:false});
+    focuses.push({id:nid++,name:'10 клиентов Авито',desc:'Клиенты: строительство, услуги, материалы, частный сектор',color:'amber',tasks:[]});
+    focuses.push({id:nid++,name:'Развитие своего с помощью Авито',desc:'',color:'green',tasks:[
+      mk('Покупка и сдача в аренду бытовых, строительных и уборочных инструментов'),
+      mk('Робот-косильщик и услуга покоса участков на сезон')
+    ]});
+    localStorage.setItem('seed_avito_focus_v1','1');
+    saveFocusData();
+  }catch(e){}
+}
 function showToast(msg){
   let t=document.getElementById('globalToast');
   if(!t){t=document.createElement('div');t.id='globalToast';
